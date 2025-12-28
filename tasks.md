@@ -123,7 +123,7 @@
   - Acceptance
     - SaveLastProjectRoot updates last_project_root_path correctly
 
-- [ ] TASK-0207 Implement structured logging with rotation
+- [x] TASK-0207 Implement structured logging with rotation
   - Scope
     - logs/ratta.log
     - 1MB max, 3 generations
