@@ -15,17 +15,17 @@ const (
 var uuidV7Generator = uuid.NewV7
 var nanoidGenerate = gonanoid.Generate
 
-// NewIssueID は nanoid (9 文字) の issue_id を生成する。
+// NewIssueID は DD-DATA-003 の issue_id 仕様に従い nanoid (9 文字) を生成する。
 func NewIssueID() (string, error) {
 	return newNanoID()
 }
 
-// NewAttachmentID は nanoid (9 文字) の attachment_id を生成する。
+// NewAttachmentID は DD-DATA-005 の attachment_id 仕様に従い nanoid (9 文字) を生成する。
 func NewAttachmentID() (string, error) {
 	return newNanoID()
 }
 
-// NewCommentID は UUID v7 の comment_id を生成する。
+// NewCommentID は DD-DATA-004 の comment_id 仕様に従い UUID v7 を生成する。
 func NewCommentID() (string, error) {
 	value, err := uuidV7Generator()
 	if err != nil {

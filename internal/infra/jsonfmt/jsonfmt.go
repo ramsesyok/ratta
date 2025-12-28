@@ -7,7 +7,8 @@ import (
 
 const indent = "  "
 
-// MarshalCanonical はプロジェクト標準のインデントと LF 改行で JSON を出力する。
+// MarshalCanonical は DD-DATA-001 のデータ設計に合わせ、
+// プロジェクト標準のインデントと LF 改行で JSON を出力する。
 // キー順は TASK-0205 で対応する。
 func MarshalCanonical(value any) ([]byte, error) {
 	var buf bytes.Buffer

@@ -11,7 +11,7 @@ import (
 	"github.com/santhosh-tekuri/jsonschema/v5"
 )
 
-// LoadSchemasFromDir はディレクトリ内の JSON Schema をコンパイルし、
+// LoadSchemasFromDir は DD-BE-002 に従いディレクトリ内の JSON Schema をコンパイルし、
 // 外部参照は拒否する。
 func LoadSchemasFromDir(dir string) (map[string]*jsonschema.Schema, error) {
 	absDir, err := filepath.Abs(dir)
