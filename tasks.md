@@ -104,7 +104,7 @@
   - Acceptance
     - External refs are not resolved
 
-- [ ] TASK-0205 Implement canonical JSON writer
+- [x] TASK-0205 Implement canonical JSON writer
   - Scope
     - Indent 2 spaces, LF
     - Fixed key order (define order list in code)
