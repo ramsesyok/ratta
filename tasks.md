@@ -113,7 +113,7 @@
   - Acceptance
     - Running save twice produces identical JSON bytes
 
-- [ ] TASK-0206 Implement config.json repository
+- [x] TASK-0206 Implement config.json repository
   - Scope
     - Location: alongside ratta.exe
     - Fields per docs/detailed_design.md (format_version, last_project_root_path, log.level, ui.page_size)
