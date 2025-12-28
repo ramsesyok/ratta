@@ -64,7 +64,7 @@
 
 ## Phase 2: Backend infrastructure (file I/O, validation, logging, config)
 
-- [ ] TASK-0201 Implement atomic write helper
+- [x] TASK-0201 Implement atomic write helper
   - Scope
     - Write tmp file in same directory, then rename to target
     - tmp naming: <issue_id>.json.tmp.<pid>.<timestamp> (or equivalent)
