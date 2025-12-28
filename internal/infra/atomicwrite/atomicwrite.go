@@ -14,6 +14,7 @@ var removeFile = os.Remove
 
 type tempFileCreator func(dir, base string) (io.WriteCloser, string, error)
 
+// createTempFile は DD-PERSIST-002 の命名規則で一時ファイルを作成する。
 var createTempFile tempFileCreator = func(dir, base string) (io.WriteCloser, string, error) {
 	timestamp := now().Unix()
 	tmpName := fmt.Sprintf("%s.tmp.%d.%d", base, os.Getpid(), timestamp)

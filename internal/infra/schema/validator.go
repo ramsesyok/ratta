@@ -25,12 +25,12 @@ type ValidationIssue struct {
 	Message          string
 }
 
-// ValidationResult は検証結果を表す。
+// ValidationResult は DD-BE-002 のスキーマ検証結果を表す。
 type ValidationResult struct {
 	Issues []ValidationIssue
 }
 
-// Detail は ApiErrorDTO.detail に入れる想定の文字列を返す。
+// Detail は DD-BE-002 のエラー報告に合わせ、ApiErrorDTO.detail を組み立てる。
 func (r ValidationResult) Detail() string {
 	if len(r.Issues) == 0 {
 		return ""
@@ -91,6 +91,7 @@ func (v *Validator) validateBytes(schemaName string, data []byte) (ValidationRes
 	return ValidationResult{}, nil
 }
 
+// collectIssues は DD-BE-002 の詳細表示向けに検証エラーを収集する。
 func collectIssues(err error) []ValidationIssue {
 	validationErr, ok := err.(*jsonschema.ValidationError)
 	if !ok {
@@ -101,6 +102,7 @@ func collectIssues(err error) []ValidationIssue {
 	return issues
 }
 
+// flattenIssues は DD-BE-002 の詳細表示向けに検証エラーを平坦化する。
 func flattenIssues(issues *[]ValidationIssue, err *jsonschema.ValidationError) {
 	if len(err.Causes) == 0 {
 		location := err.InstanceLocation

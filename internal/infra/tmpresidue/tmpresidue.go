@@ -18,7 +18,7 @@ var now = time.Now
 var removeFile = os.Remove
 var walkDir = filepath.WalkDir
 
-// ScanResult は一時ファイル残骸の検出結果を表す。
+// ScanResult は DD-PERSIST-004 の一時ファイル残骸検出結果を表す。
 type ScanResult struct {
 	ErrorCode string
 	Message   string
@@ -77,6 +77,7 @@ func ScanAndHandle(root string) ([]ScanResult, error) {
 	return results, nil
 }
 
+// isTmpArtifact は DD-PERSIST-004 の *.tmp.* 判定を行う。
 func isTmpArtifact(name string) bool {
 	matched, err := filepath.Match("*.tmp.*", name)
 	if err == nil {
@@ -85,6 +86,7 @@ func isTmpArtifact(name string) bool {
 	return strings.Contains(name, ".tmp.")
 }
 
+// shouldSkipDir は DD-PERSIST-004 の検出対象を絞るための除外ルールに従う。
 func shouldSkipDir(name string) bool {
 	if name == ".tmp_rename" {
 		return false

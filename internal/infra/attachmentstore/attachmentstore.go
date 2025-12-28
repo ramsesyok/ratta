@@ -34,13 +34,13 @@ var createTempFile = func(dir, base string) (io.WriteCloser, string, error) {
 	return file, tmpPath, nil
 }
 
-// Input は保存対象の添付ファイル情報を表す。
+// Input は DD-DATA-005 の添付情報をもとに保存対象を表す。
 type Input struct {
 	OriginalName string
 	Data         []byte
 }
 
-// SavedAttachment は保存結果の情報を表す。
+// SavedAttachment は DD-DATA-005 の添付保存結果を表す。
 type SavedAttachment struct {
 	AttachmentID string
 	OriginalName string
@@ -126,6 +126,7 @@ func writeWithTemp(dir, base string, data []byte) error {
 	return nil
 }
 
+// removeAll は DD-DATA-005 のロールバック要件に従い保存済み添付を削除する。
 func removeAll(saved []SavedAttachment) error {
 	var errs []string
 	for _, record := range saved {
@@ -139,6 +140,7 @@ func removeAll(saved []SavedAttachment) error {
 	return nil
 }
 
+// buildStoredName は DD-DATA-005 の stored_name 仕様に従い衝突回避名を作る。
 func buildStoredName(dir, attachmentID, sanitizedName string) (string, error) {
 	namePart, ext := splitExt(sanitizedName)
 	basePrefix := attachmentID + "_"
@@ -206,6 +208,7 @@ func sanitizeFileName(name string) string {
 	return cleaned
 }
 
+// trimToLength は DD-DATA-005 の 255 文字制限に合わせて切り詰める。
 func trimToLength(value string, max int) string {
 	if max <= 0 {
 		return ""
@@ -217,6 +220,7 @@ func trimToLength(value string, max int) string {
 	return string(runes[:max])
 }
 
+// splitExt は拡張子を分離し、DD-DATA-005 の名称組み立てに使う。
 func splitExt(name string) (string, string) {
 	ext := filepath.Ext(name)
 	if ext == "" || ext == name {

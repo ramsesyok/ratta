@@ -14,7 +14,7 @@ import (
 const formatVersion = 1
 const defaultPageSize = 20
 
-// Config は config.json の内容を表す。
+// Config は DD-DATA-001 の config.json 仕様を表す。
 type Config struct {
 	FormatVersion       int    `json:"format_version"`
 	LastProjectRootPath string `json:"last_project_root_path"`
@@ -22,12 +22,12 @@ type Config struct {
 	UI                  UI     `json:"ui"`
 }
 
-// Log はログ設定を表す。
+// Log は DD-DATA-001 の log 設定を表す。
 type Log struct {
 	Level string `json:"level"`
 }
 
-// UI は UI 設定を表す。
+// UI は DD-DATA-001 の UI 設定を表す。
 type UI struct {
 	PageSize int `json:"page_size"`
 }
@@ -46,7 +46,7 @@ func DefaultConfig() Config {
 	}
 }
 
-// Repository は config.json の読み書きを担う。
+// Repository は DD-BE-002 の config.json 読み書きを担う。
 type Repository struct {
 	path string
 }

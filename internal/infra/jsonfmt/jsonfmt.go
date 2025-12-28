@@ -36,6 +36,7 @@ type keyOrder struct {
 	Children map[string]*keyOrder
 }
 
+// issueKeyOrder は DD-DATA-003/004/005 のキー順を定義する。
 var issueKeyOrder = &keyOrder{
 	Order: []string{
 		"version",
@@ -78,6 +79,7 @@ var issueKeyOrder = &keyOrder{
 	},
 }
 
+// configKeyOrder は DD-DATA-001 のキー順を定義する。
 var configKeyOrder = &keyOrder{
 	Order: []string{
 		"format_version",
@@ -91,6 +93,7 @@ var configKeyOrder = &keyOrder{
 	},
 }
 
+// contractorKeyOrder は DD-DATA-001 のキー順を定義する。
 var contractorKeyOrder = &keyOrder{
 	Order: []string{
 		"format_version",
@@ -103,6 +106,7 @@ var contractorKeyOrder = &keyOrder{
 	},
 }
 
+// marshalWithOrder は DD-DATA-001 の canonical 出力ルールに従って整形する。
 func marshalWithOrder(value any, order *keyOrder) ([]byte, error) {
 	raw, err := json.Marshal(value)
 	if err != nil {
@@ -122,6 +126,7 @@ func marshalWithOrder(value any, order *keyOrder) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// writeValue は DD-DATA-001 の JSON ルールに従い値を出力する。
 func writeValue(buf *bytes.Buffer, value any, order *keyOrder, level int) error {
 	switch typed := value.(type) {
 	case map[string]any:
@@ -138,6 +143,7 @@ func writeValue(buf *bytes.Buffer, value any, order *keyOrder, level int) error 
 	}
 }
 
+// writeObject は DD-DATA-001 のキー順でオブジェクトを出力する。
 func writeObject(buf *bytes.Buffer, value map[string]any, order *keyOrder, level int) error {
 	if len(value) == 0 {
 		buf.WriteString("{}")
@@ -164,6 +170,7 @@ func writeObject(buf *bytes.Buffer, value map[string]any, order *keyOrder, level
 	return nil
 }
 
+// writeArray は DD-DATA-001 の配列表記で出力する。
 func writeArray(buf *bytes.Buffer, value []any, order *keyOrder, level int) error {
 	if len(value) == 0 {
 		buf.WriteString("[]")
@@ -185,6 +192,7 @@ func writeArray(buf *bytes.Buffer, value []any, order *keyOrder, level int) erro
 	return nil
 }
 
+// orderedKeys は DD-DATA-001 のキー順と未知キーのソートを適用する。
 func orderedKeys(value map[string]any, order *keyOrder) []string {
 	seen := make(map[string]struct{}, len(value))
 	var keys []string
@@ -208,6 +216,7 @@ func orderedKeys(value map[string]any, order *keyOrder) []string {
 	return keys
 }
 
+// orderChild は DD-DATA-001 のネスト順序定義を取得する。
 func orderChild(order *keyOrder, key string) *keyOrder {
 	if order == nil {
 		return nil

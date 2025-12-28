@@ -58,6 +58,7 @@ func LoadSchemasFromDir(dir string) (map[string]*jsonschema.Schema, error) {
 	return compiled, nil
 }
 
+// openSchemaFile は DD-BE-002 のローカル限定ルールを満たすファイルを開く。
 func openSchemaFile(baseDir, path string) (io.ReadCloser, error) {
 	cleaned := filepath.Clean(path)
 	if !filepath.IsAbs(cleaned) {

@@ -2,6 +2,7 @@ package timeutil
 
 import "time"
 
+// now は DD-DATA-002 の時刻仕様をテストで固定するための差し替え点。
 var now = time.Now
 
 // FormatISO8601 は DD-DATA-002 の日時表記に従い、TZ 付き秒精度で整形する。

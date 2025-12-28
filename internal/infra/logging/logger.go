@@ -59,6 +59,7 @@ func (l *Logger) Error(message string, fields map[string]any) {
 	l.write(LevelError, message, fields)
 }
 
+// write は DD-BE-002/BD-FILES-003 のフォーマットでログ行を出力する。
 func (l *Logger) write(level Level, message string, fields map[string]any) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -99,6 +100,7 @@ func (l *Logger) write(level Level, message string, fields map[string]any) {
 	_, _ = file.Write(line)
 }
 
+// levelString は DD-BE-002/BD-FILES-003 のログレベル表記を返す。
 func levelString(level Level) string {
 	switch level {
 	case LevelDebug:
@@ -110,6 +112,7 @@ func levelString(level Level) string {
 	}
 }
 
+// ensureDir は DD-BE-002/BD-FILES-003 のログ出力先ディレクトリを作成する。
 func ensureDir(dir string) error {
 	return os.MkdirAll(dir, 0o755)
 }

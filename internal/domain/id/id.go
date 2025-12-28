@@ -34,6 +34,7 @@ func NewCommentID() (string, error) {
 	return value.String(), nil
 }
 
+// newNanoID は DD-DATA-003/DD-DATA-005 の ID 仕様に従い nanoid (9 文字) を生成する。
 func newNanoID() (string, error) {
 	value, err := nanoidGenerate(nanoAlphabet, nanoIDLength)
 	if err != nil {
