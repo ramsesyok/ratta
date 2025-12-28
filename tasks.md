@@ -31,7 +31,7 @@
 
 ## Phase 1: Schemas and shared primitives
 
-- [ ] TASK-0101 Add JSON Schema files
+- [x] TASK-0101 Add JSON Schema files
   - Deliverables
     - schemas/issue.schema.json
     - schemas/config.schema.json
@@ -42,7 +42,7 @@
   - Acceptance
     - Schema compilation succeeds at runtime
 
-- [ ] TASK-0102 Implement ID utilities
+- [x] TASK-0102 Implement ID utilities
   - Deliverables
     - issue_id generator (nanoid 9)
     - attachment_id generator (nanoid 9)
@@ -52,7 +52,7 @@
   - Acceptance
     - Deterministic tests (no flaky timing assumptions)
 
-- [ ] TASK-0103 Implement time utilities
+- [x] TASK-0103 Implement time utilities
   - Deliverables
     - ISO 8601 with TZ generation (second precision)
     - UI formatting helper (Japanese display format) on frontend
