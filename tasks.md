@@ -83,7 +83,7 @@
   - Acceptance
     - Errors are recorded with target_path and hints
 
-- [ ] TASK-0203 Implement attachment storage helper
+- [x] TASK-0203 Implement attachment storage helper
   - Scope
     - Create <issue_id>.files if needed
     - Sanitize filenames for Windows invalid characters and trailing dot/space
