@@ -49,7 +49,7 @@ Implement using test-driven development as the default workflow:
 - Add E2E tests only for representative cross-layer flows, not for everything
 - Source code comments should be written in Japanese.
 - To ensure traceability with the detailed design document, include the ID of the relevant detailed design document in the function comments.
-- テストコードには意図・目的が分かる日本語コメントを記載する
+- Add Japanese comments to test code that clearly explain the intent and purpose
 
 ## Architecture and layering
 

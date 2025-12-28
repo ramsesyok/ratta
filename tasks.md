@@ -52,7 +52,7 @@
   - Acceptance
     - Deterministic tests (no flaky timing assumptions)
 
-- [ ] TASK-0103 Implement time utilities
+- [x] TASK-0103 Implement time utilities
   - Deliverables
     - ISO 8601 with TZ generation (second precision)
     - UI formatting helper (Japanese display format) on frontend
