@@ -64,7 +64,7 @@
 
 ## Phase 2: Backend infrastructure (file I/O, validation, logging, config)
 
-- [ ] TASK-0201 Implement atomic write helper
+- [x] TASK-0201 Implement atomic write helper
   - Scope
     - Write tmp file in same directory, then rename to target
     - tmp naming: <issue_id>.json.tmp.<pid>.<timestamp> (or equivalent)
@@ -74,7 +74,7 @@
   - Acceptance
     - Existing file is not corrupted on simulated failure
 
-- [ ] TASK-0202 Implement tmp residue scan policy
+- [x] TASK-0202 Implement tmp residue scan policy
   - Scope
     - Detect *.tmp.* at startup
     - If mtime < 24h: delete; if >= 24h: keep and record as load error
@@ -83,7 +83,7 @@
   - Acceptance
     - Errors are recorded with target_path and hints
 
-- [ ] TASK-0203 Implement attachment storage helper
+- [x] TASK-0203 Implement attachment storage helper
   - Scope
     - Create <issue_id>.files if needed
     - Sanitize filenames for Windows invalid characters and trailing dot/space
@@ -94,7 +94,7 @@
   - Acceptance
     - If JSON update fails after attachments staged, attachments are deleted (rollback)
 
-- [ ] TASK-0204 Implement schema validation wrapper
+- [x] TASK-0204 Implement schema validation wrapper
   - Scope
     - Load/compile schemas from schemas/ directory
     - Validate issue/config/contractor JSON
@@ -104,7 +104,7 @@
   - Acceptance
     - External refs are not resolved
 
-- [ ] TASK-0205 Implement canonical JSON writer
+- [x] TASK-0205 Implement canonical JSON writer
   - Scope
     - Indent 2 spaces, LF
     - Fixed key order (define order list in code)
@@ -113,7 +113,7 @@
   - Acceptance
     - Running save twice produces identical JSON bytes
 
-- [ ] TASK-0206 Implement config.json repository
+- [x] TASK-0206 Implement config.json repository
   - Scope
     - Location: alongside ratta.exe
     - Fields per docs/detailed_design.md (format_version, last_project_root_path, log.level, ui.page_size)
@@ -123,7 +123,7 @@
   - Acceptance
     - SaveLastProjectRoot updates last_project_root_path correctly
 
-- [ ] TASK-0207 Implement structured logging with rotation
+- [x] TASK-0207 Implement structured logging with rotation
   - Scope
     - logs/ratta.log
     - 1MB max, 3 generations
