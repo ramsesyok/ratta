@@ -1,0 +1,204 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "issue.schema.json",
+  "title": "ratta Issue JSON",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "issue_id",
+    "category",
+    "title",
+    "description",
+    "status",
+    "priority",
+    "origin_company",
+    "created_at",
+    "updated_at",
+    "due_date",
+    "comments"
+  ],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Issue JSON version. Starts from 1."
+    },
+    "issue_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{9}$",
+      "description": "nanoid (9 chars)."
+    },
+    "category": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255,
+      "pattern": "^(?!.*[<>:\\\"/\\\\|?*\\x00-\\x1F])(?!.*[. ]$).{1,255}$",
+      "description": "Must match the category directory name."
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Open",
+        "Working",
+        "Inquiry",
+        "Hold",
+        "Feedback",
+        "Resolved",
+        "Closed",
+        "Rejected"
+      ],
+      "description": "Internal token is English."
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "High",
+        "Medium",
+        "Low"
+      ]
+    },
+    "origin_company": {
+      "type": "string",
+      "enum": [
+        "Contractor",
+        "Vendor"
+      ]
+    },
+    "assignee": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:Z|[+-]\\d{2}:\\d{2})$",
+      "description": "ISO 8601 with timezone, seconds precision."
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:Z|[+-]\\d{2}:\\d{2})$",
+      "description": "ISO 8601 with timezone, seconds precision."
+    },
+    "due_date": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "description": "Local date (YYYY-MM-DD)."
+    },
+    "comments": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/comment"
+      },
+      "description": "May be empty."
+    }
+  },
+  "$defs": {
+    "attachmentRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "attachment_id",
+        "file_name",
+        "stored_name",
+        "relative_path"
+      ],
+      "properties": {
+        "attachment_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{9}$"
+        },
+        "file_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255,
+          "pattern": "^(?!.*[\\\\/]).+$",
+          "description": "Original file name (no path separators)."
+        },
+        "stored_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255,
+          "pattern": "^(?!.*[\\\\/]).+$",
+          "description": "Sanitized stored file name (no path separators)."
+        },
+        "relative_path": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{9}\\.files\\/[^\\\\/]{1,255}$",
+          "description": "<issue_id>.files/<stored_name>"
+        },
+        "mime_type": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "comment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "comment_id",
+        "body",
+        "author_name",
+        "author_company",
+        "created_at",
+        "attachments"
+      ],
+      "properties": {
+        "comment_id": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
+          "description": "UUID v7."
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100000,
+          "description": "Markdown. Size limit is defined as <= 100KB in UTF-8 bytes (approx)."
+        },
+        "author_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "author_company": {
+          "type": "string",
+          "enum": [
+            "Contractor",
+            "Vendor"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:Z|[+-]\\d{2}:\\d{2})$",
+          "description": "ISO 8601 with timezone, seconds precision."
+        },
+        "attachments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/attachmentRef"
+          },
+          "description": "May be empty."
+        }
+      }
+    }
+  }
+}

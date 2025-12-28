@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "config.schema.json",
+  "title": "ratta config.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format_version",
+    "last_project_root_path",
+    "log",
+    "ui"
+  ],
+  "properties": {
+    "format_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "last_project_root_path": {
+      "type": "string",
+      "description": "Last selected project root absolute path."
+    },
+    "log": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "level"
+      ],
+      "properties": {
+        "level": {
+          "type": "string",
+          "enum": [
+            "info",
+            "debug"
+          ]
+        }
+      }
+    },
+    "ui": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "page_size"
+      ],
+      "properties": {
+        "page_size": {
+          "type": "integer",
+          "const": 20,
+          "description": "Default page size."
+        }
+      }
+    }
+  }
+}
