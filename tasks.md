@@ -136,10 +136,217 @@
 
 ## Phase 3: Contractor auth and CLI
 
-- [ ] TASK-0301 Implement crypto for contractor.json
+- [x] TASK-0301 Implement crypto for contractor.json
   - Scope
     - PBKDF2-HMAC-SHA256 key derivation (iterations/salt length per docs)
     - AES-256-GCM encrypt fixed plaintext "contractor-mode"
     - Store salt/nonce/ciphertext in base64 with format_version
   - Tests
-    - Unit tests: round-trip success, wrong passwor
+    - Unit tests: round-trip success, wrong password fails, corrupted fields fail
+  - Acceptance
+    - Failure maps to E_CRYPTO with useful hint
+
+- [ ] TASK-0302 Implement CLI: ratta.exe init contractor
+  - Scope
+    - Console password input (hidden), confirmation required
+    - --force to overwrite existing auth/contractor.json
+    - Creates auth/ directory if needed
+  - Tests
+    - Unit tests for file creation and overwrite rules (abstract console input)
+  - Acceptance
+    - Existing file without --force fails with non-zero exit
+
+## Phase 4: Backend domain and use-cases
+
+- [ ] TASK-0401 Implement domain types and validation
+  - Scope
+    - Status tokens and end-state rules
+    - Priority tokens
+    - Category name validation (Windows invalid chars, trailing dot/space, length)
+    - Issue field validation (required fields, 255 char constraints, due_date format)
+    - Comment validation (author_name required, body <= 100KB UTF-8 bytes, attachments <= 5)
+  - Tests
+    - Unit tests per rule
+  - Acceptance
+    - Validation errors map to E_VALIDATION
+
+- [ ] TASK-0402 Implement mode detection and permission checks
+  - Scope
+    - DetectMode: checks existence of auth/contractor.json
+    - VerifyContractorPassword: verifies and returns Contractor mode
+    - Status transition permission rules (Vendor vs Contractor)
+  - Tests
+    - Unit tests: permission matrix for transitions and edit restrictions
+  - Acceptance
+    - Backend rejects disallowed transitions even if UI tries
+
+## Phase 5: Backend data loading, error registry, and Wails API
+
+- [ ] TASK-0501 Implement project root validation and creation
+  - Scope
+    - ValidateProjectRoot, CreateProjectRoot, SaveLastProjectRoot
+  - Tests
+    - Unit tests for path validation cases
+  - Acceptance
+    - Normalized path returned when possible
+
+- [ ] TASK-0502 Implement category scanning and read-only category detection
+  - Scope
+    - Flat scan of <PROJECT_ROOT> directories
+    - Exclude .git and dot dirs except .tmp_rename
+    - Include .tmp_rename/<category> as read-only CategoryDTO
+  - Tests
+    - Unit tests with sample directory trees
+  - Acceptance
+    - Nested subfolders not treated as categories
+
+- [ ] TASK-0503 Implement issue scanning and classification
+  - Scope
+    - Load *.json under a category
+    - Classify: JSON parse failure vs schema invalid vs valid
+    - Parse failure excluded from list but registered as load error
+    - Schema invalid included with is_schema_invalid=true and read-only update policy
+    - Unsupported issue.version treated as schema invalid (read-only)
+  - Tests
+    - Unit tests for each classification type
+  - Acceptance
+    - GetLoadErrors returns the recorded items
+
+- [ ] TASK-0504 Implement issue persistence and core operations
+  - Scope
+    - GetIssue (always reload from disk)
+    - CreateIssue (origin_company from current mode; comments starts empty)
+    - UpdateIssue (reject end-state; reject schema-invalid; update updated_at)
+    - ListIssues (supports sort/filter/page per query DTO)
+  - Tests
+    - Unit tests: create/update rules, paging and sorting determinism
+  - Acceptance
+    - ListIssues result is stable and matches query inputs
+
+- [ ] TASK-0505 Implement comment add with attachments
+  - Scope
+    - AddComment appends to comments array
+    - Saves attachments first with staging, then updates JSON
+    - If JSON update fails, delete attachments (rollback)
+  - Tests
+    - Unit tests for rollback and success paths
+  - Acceptance
+    - Comments displayed oldest-to-newest based on array order
+
+- [ ] TASK-0506 Implement category mutators (Contractor only)
+  - Scope
+    - CreateCategory (reject duplicates including case-insensitive)
+    - DeleteCategory (only if no *.json; treat only .files as empty)
+    - RenameCategory with .tmp_rename workflow and error boundaries
+  - Tests
+    - Unit tests: rename steps, conflict when .tmp_rename exists, permission errors
+  - Acceptance
+    - Read-only categories block edits and deletes with E_CONFLICT
+
+- [ ] TASK-0507 Implement Wails binding layer and DTO mapping
+  - Scope
+    - Expose APIs listed in docs/detailed_design.md
+    - Standard ResponseDTO (ok/data/error) mapping for frontend
+  - Tests
+    - Unit tests for error mapping to ApiErrorDTO
+  - Acceptance
+    - Frontend can call all APIs without importing internal Go structs
+
+## Phase 6: Frontend stores and UI
+
+- [ ] TASK-0601 Implement Wails API client wrappers
+  - Scope
+    - Typed wrappers around generated Wails bindings
+    - Normalize ResponseDTO and throw or return consistent results to stores
+  - Tests
+    - Unit tests with mocked responses
+  - Acceptance
+    - Errors flow into stores/errors consistently
+
+- [ ] TASK-0602 Implement Pinia stores skeleton
+  - Scope
+    - stores/app, stores/categories, stores/issues, stores/issueDetail, stores/errors
+    - Implement actions per docs/detailed_design.md, including selectCategory calling loadIssues
+  - Tests
+    - Store unit tests for state transitions and error capture
+  - Acceptance
+    - All backend call failures are captured into stores/errors
+
+- [ ] TASK-0603 Implement ProjectSelectDialog
+  - Scope
+    - Uses bootstrap to prefill last project root
+    - Validate/Open, Create new, Cancel exits
+  - Tests
+    - Component tests: validation error display, happy path
+  - Acceptance
+    - Selecting a project root persists last_project_root_path
+
+- [ ] TASK-0604 Implement ContractorPasswordDialog
+  - Scope
+    - Shown when auth/contractor.json exists
+    - On failure shows message then exits flow
+  - Tests
+    - Component tests: failure message and close behavior routing
+  - Acceptance
+    - Mode becomes Contractor only after successful verification
+
+- [ ] TASK-0605 Implement MainView (categories + issue list)
+  - Scope
+    - Left: categories list, Contractor-only controls (create/rename/delete)
+    - Right: issue list with columns, paging (20), sorting, filtering
+    - End-state issues greyed out
+    - Schema-invalid issues show warning and block update actions
+  - Tests
+    - Component/store integration tests for sorting/filter/paging
+  - Acceptance
+    - Selecting a category loads and displays issues
+
+- [ ] TASK-0606 Implement IssueDetailDialog
+  - Scope
+    - View mode by default; edit mode after explicit action
+    - UpdateIssue flow with required field validation
+    - Comment add with optional attachments (up to 5)
+    - Markdown rendering for comment body (markdown-it)
+    - Read-only category and schema-invalid blocks editing/commenting, routes to error detail
+  - Tests
+    - Component tests for edit toggling, validation, blocked behavior
+  - Acceptance
+    - Detail reloads from disk on open/reload
+
+- [ ] TASK-0607 Implement ErrorDetailDialog
+  - Scope
+    - Displays aggregated errors from stores/errors
+    - Supports scope filtering (all/category)
+    - Copy buttons for paths/messages
+  - Tests
+    - Component tests for rendering and filter
+  - Acceptance
+    - Backend load errors are visible and actionable
+
+## Phase 7: End-to-end quality gates and packaging
+
+- [ ] TASK-0701 Add representative Playwright E2E scenarios
+  - Scenarios
+    - Create issue -> JSON created -> appears in list
+    - Add comment (no attachments) -> JSON updated -> appears in detail
+    - Add comment (with attachments) -> files created -> appears in detail
+    - Vendor cannot set Closed/Rejected
+    - Schema-invalid JSON shows warning, update disabled, error visible
+    - Parse-broken JSON excluded from list, error visible
+    - Detail reload picks up external file change
+  - Acceptance
+    - E2E suite runs locally and is stable
+
+- [ ] TASK-0702 Build and distribution checks
+  - Scope
+    - wails build outputs a zip-distributable directory layout
+    - logs/, auth/, config.json behaviors validated
+  - Acceptance
+    - Fresh unzip run works without installer steps
+
+- [ ] TASK-0703 Documentation alignment check
+  - Scope
+    - Confirm implementation matches docs/basic_design.md and docs/detailed_design.md
+    - Record any intentional deviations in a short DEV_NOTES.md (only if required)
+  - Acceptance
+    - No untracked behavioral divergence
