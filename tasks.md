@@ -94,7 +94,7 @@
   - Acceptance
     - If JSON update fails after attachments staged, attachments are deleted (rollback)
 
-- [ ] TASK-0204 Implement schema validation wrapper
+- [x] TASK-0204 Implement schema validation wrapper
   - Scope
     - Load/compile schemas from schemas/ directory
     - Validate issue/config/contractor JSON
