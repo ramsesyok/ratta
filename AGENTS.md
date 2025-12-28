@@ -17,7 +17,7 @@ If an instruction here conflicts with those documents, follow the documents.
 
 ## Product summary
 
-rattа is a Windows desktop application for managing issues shared between Contractor and Vendor in a single project. Data is stored as JSON files in a project root folder. Synchronization and conflict resolution are out of scope and are handled operationally via git.
+ratta is a Windows desktop application for managing issues shared between Contractor and Vendor in a single project. Data is stored as JSON files in a project root folder. Synchronization and conflict resolution are out of scope and are handled operationally via git.
 
 ## Non-goals
 
@@ -47,9 +47,82 @@ Implement using test-driven development as the default workflow:
 - Prefer small, fast unit tests for domain and infrastructure logic
 - Keep dependencies injectable; avoid hard-to-test code paths
 - Add E2E tests only for representative cross-layer flows, not for everything
-- Source code comments should be written in Japanese.
-- To ensure traceability with the detailed design document, include the ID of the relevant detailed design document in the function comments.
-- Add Japanese comments to test code that clearly explain the intent and purpose
+
+Comment language and traceability:
+
+- Source code comments must be written in Japanese.
+- To ensure traceability with the detailed design document, include the ID of the relevant detailed design section (e.g., DD-...) in function comments.
+- Test code must include Japanese comments that clearly explain intent and purpose.
+
+## Commenting and documentation rules (enforced)
+
+These rules exist to make the codebase readable and maintainable when implemented by agents. If a change does not meet these rules, revise the code and comments until it does.
+
+### Language and tone
+
+- Comments are Japanese by default.
+- Use consistent terminology across the project (do not alternate synonyms arbitrarily).
+- Avoid vague wording (e.g., "maybe", "roughly", "somehow"). Be specific and testable.
+
+### What must be commented
+
+Project-level and file-level:
+
+- For each new or modified file, add 1 to 3 lines near the top describing the file responsibility (責務) and the boundary of what it does not do.
+
+Exported identifiers (GoDoc):
+
+- All exported types, functions, methods, constants, and variables must have GoDoc-style comments.
+- The first sentence must start with the identifier name.
+
+Functions and methods (required items):
+
+For every new or modified function or method, add a Japanese comment block immediately above it that covers the following, as applicable:
+
+- 目的: what the function guarantees and why it exists
+- 入力: meaning of parameters, units, assumptions, preconditions
+- 出力: meaning of return values and possible states
+- エラー: when errors occur and how callers are expected to handle them
+- 副作用: I/O, file writes, logging, metrics, global state changes
+- 並行性: whether it is thread-safe, how shared state is protected, locking assumptions
+- 不変条件: invariants that must hold (e.g., sorted, normalized, validated)
+- 関連DD: the relevant detailed design ID (DD-...)
+
+Non-obvious logic:
+
+Add a short Japanese rationale comment immediately above code that is likely to confuse a reader, including:
+
+- Non-trivial conditionals, boundary handling, early returns with hidden intent
+- Regular expressions, bit operations, complex formatting, parsing logic
+- Magic numbers or constants with implicit meaning (always state unit and origin)
+- Workarounds or compatibility logic (what is avoided, why, and removal condition)
+
+Performance-related code:
+
+- If you introduce an optimization, explain why it is needed, what bottleneck it addresses, and what to measure.
+- If complexity matters, state expected time/space characteristics at a high level.
+
+### What must not be done
+
+- Do not write comments that simply restate the code in words.
+- Do not let comments drift from implementation. If the code changes behavior, update the comment in the same change.
+
+### Tests
+
+- Tests must include Japanese comments explaining intent and purpose.
+- Table-driven tests must make the intent obvious per case:
+  - Put the intent in the case name and/or add a comment per case.
+- For boundary cases, error cases, and regression tests, explain why the case exists and what failure it prevents.
+- When an expected value is non-trivial, document the basis (前提 or 根拠) so failures are diagnosable.
+
+### Definition of done (commenting)
+
+A change is complete only if:
+
+- New/modified functions include the required Japanese comment block (purpose, inputs/outputs, errors, side effects, concurrency, invariants, and DD-... reference).
+- Non-obvious logic has a rationale comment (why, not what).
+- Any workaround/compatibility logic includes a removal condition.
+- Tests include intent/purpose comments and cases are understandable without reading the implementation.
 
 ## Architecture and layering
 
