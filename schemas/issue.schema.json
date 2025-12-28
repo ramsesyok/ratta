@@ -33,7 +33,7 @@
       "type": "string",
       "minLength": 1,
       "maxLength": 255,
-      "pattern": "^(?!.*[<>:\\\"/\\\\|?*\\x00-\\x1F])(?!.*[. ]$).{1,255}$",
+      "pattern": "^[^<>:\\\"/\\\\|?*\\x00-\\x1F]*[^<>:\\\"/\\\\|?*\\x00-\\x1F .]$",
       "description": "Must match the category directory name."
     },
     "title": {
@@ -124,14 +124,14 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 255,
-          "pattern": "^(?!.*[\\\\/]).+$",
+          "pattern": "^[^\\\\/]+$",
           "description": "Original file name (no path separators)."
         },
         "stored_name": {
           "type": "string",
           "minLength": 1,
           "maxLength": 255,
-          "pattern": "^(?!.*[\\\\/]).+$",
+          "pattern": "^[^\\\\/]+$",
           "description": "Sanitized stored file name (no path separators)."
         },
         "relative_path": {

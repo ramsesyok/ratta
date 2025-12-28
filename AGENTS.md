@@ -47,6 +47,8 @@ Implement using test-driven development as the default workflow:
 - Prefer small, fast unit tests for domain and infrastructure logic
 - Keep dependencies injectable; avoid hard-to-test code paths
 - Add E2E tests only for representative cross-layer flows, not for everything
+- Source code comments should be written in Japanese.
+- To ensure traceability with the detailed design document, include the ID of the relevant detailed design document in the function comments.
 
 ## Architecture and layering
 
