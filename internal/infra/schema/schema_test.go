@@ -7,6 +7,7 @@ import (
 )
 
 func TestLoadSchemasFromDir_AllowsLocalSchemas(t *testing.T) {
+	// schemas/ 配下のローカルスキーマが問題なくコンパイルできることを確認する。
 	baseDir := filepath.Join("..", "..", "..", "schemas")
 	compiled, err := LoadSchemasFromDir(baseDir)
 	if err != nil {
@@ -25,6 +26,7 @@ func TestLoadSchemasFromDir_AllowsLocalSchemas(t *testing.T) {
 }
 
 func TestLoadSchemasFromDir_RejectsHTTPRefs(t *testing.T) {
+	// 外部 HTTP 参照が含まれる場合に拒否されることを確認する。
 	tempDir := t.TempDir()
 	schema := `{
   "$schema": "https://json-schema.org/draft/2020-12/schema",

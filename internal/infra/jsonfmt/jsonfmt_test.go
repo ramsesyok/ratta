@@ -3,6 +3,7 @@ package jsonfmt
 import "testing"
 
 func TestMarshalCanonicalIndentation(t *testing.T) {
+	// JSON が 2 スペースのインデントと LF 改行で出力されることを確認する。
 	type sample struct {
 		Name  string `json:"name"`
 		Count int    `json:"count"`

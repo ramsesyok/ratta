@@ -10,6 +10,7 @@ import (
 
 func withDeterministicNanoGenerator(t *testing.T) {
 	t.Helper()
+	// 乱数依存を排除して ID の一意性・形式を安定的に検証する。
 	previous := nanoidGenerate
 	counter := 0
 	nanoidGenerate = func(alphabet string, size int) (string, error) {
@@ -30,6 +31,7 @@ func withDeterministicNanoGenerator(t *testing.T) {
 }
 
 func TestNanoIDs_FormatAndUniqueness(t *testing.T) {
+	// nanoid の長さ・許可文字・一意性を同時に確認する。
 	withDeterministicNanoGenerator(t)
 
 	pattern := regexp.MustCompile(`^[A-Za-z0-9_-]{9}$`)
@@ -49,6 +51,7 @@ func TestNanoIDs_FormatAndUniqueness(t *testing.T) {
 		seen[value] = struct{}{}
 	}
 
+	// attachment_id も同じフォーマット要件を満たすことを確認する。
 	attachmentID, err := NewAttachmentID()
 	if err != nil {
 		t.Fatalf("NewAttachmentID error: %v", err)
@@ -59,6 +62,7 @@ func TestNanoIDs_FormatAndUniqueness(t *testing.T) {
 }
 
 func TestCommentID_FormatAndUniqueness(t *testing.T) {
+	// UUID v7 の形式と一意性を決定的に検証する。
 	previous := uuidV7Generator
 	defer func() { uuidV7Generator = previous }()
 
