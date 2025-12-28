@@ -74,7 +74,7 @@
   - Acceptance
     - Existing file is not corrupted on simulated failure
 
-- [ ] TASK-0202 Implement tmp residue scan policy
+- [x] TASK-0202 Implement tmp residue scan policy
   - Scope
     - Detect *.tmp.* at startup
     - If mtime < 24h: delete; if >= 24h: keep and record as load error
