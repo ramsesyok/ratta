@@ -133,3 +133,10 @@ func decryptFixed(key, nonce, ciphertext []byte) ([]byte, error) {
 	}
 	return plaintext, nil
 }
+
+// SetRandReader は DD-CLI-005 の乱数生成をテスト用に差し替える。
+func SetRandReader(reader io.Reader) func() {
+	previous := randReader
+	randReader = reader
+	return func() { randReader = previous }
+}
