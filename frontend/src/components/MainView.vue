@@ -7,6 +7,8 @@ import { useAppStore } from '../stores/app'
 import { useCategoriesStore } from '../stores/categories'
 import { useIssuesStore } from '../stores/issues'
 
+const emit = defineEmits(['open-issue'])
+
 const appStore = useAppStore()
 const categoriesStore = useCategoriesStore()
 const issuesStore = useIssuesStore()
@@ -179,6 +181,22 @@ async function handleDeleteCategory() {
   showDeleteDialog.value = false
 }
 
+// handleOpenIssue は課題詳細ダイアログの表示を要求する。
+// 目的: 選択した課題を上位コンポーネントへ通知する。
+// 入力: item は課題行の情報。
+// 出力: なし。
+// エラー: なし。
+// 副作用: emit で open-issue を通知する。
+// 並行性: 単一UIイベント前提。
+// 不変条件: selectedCategory が無い場合は通知しない。
+// 関連DD: DD-UI-006
+function handleOpenIssue(item) {
+  if (!selectedCategory.value) {
+    return
+  }
+  emit('open-issue', { category: selectedCategory.value, issue_id: item.issue_id })
+}
+
 // テスト用にフィルタ操作を公開する。
 defineExpose({ applyFilter })
 </script>
@@ -336,8 +354,10 @@ defineExpose({ applyFilter })
                   :key="item.issue_id"
                   :class="{
                     'issue-row--closed': isEndState(item.status),
-                    'issue-row--schema': item.is_schema_invalid
+                    'issue-row--schema': item.is_schema_invalid,
+                    'issue-row--clickable': true
                   }"
+                  @click="handleOpenIssue(item)"
                 >
                   <td>
                     <v-icon
@@ -421,5 +441,9 @@ defineExpose({ applyFilter })
 
 .issue-row--schema {
   background: rgba(255, 160, 0, 0.08);
+}
+
+.issue-row--clickable {
+  cursor: pointer;
 }
 </style>
