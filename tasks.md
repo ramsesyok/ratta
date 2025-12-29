@@ -254,7 +254,7 @@
 
 ## Phase 6: Frontend stores and UI
 
-- [ ] TASK-0601 Implement Wails API client wrappers
+- [x] TASK-0601 Implement Wails API client wrappers
   - Scope
     - Typed wrappers around generated Wails bindings
     - Normalize ResponseDTO and throw or return consistent results to stores
