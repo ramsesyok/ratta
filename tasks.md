@@ -158,7 +158,7 @@
 
 ## Phase 4: Backend domain and use-cases
 
-- [ ] TASK-0401 Implement domain types and validation
+- [x] TASK-0401 Implement domain types and validation
   - Scope
     - Status tokens and end-state rules
     - Priority tokens
@@ -170,7 +170,7 @@
   - Acceptance
     - Validation errors map to E_VALIDATION
 
-- [ ] TASK-0402 Implement mode detection and permission checks
+- [x] TASK-0402 Implement mode detection and permission checks
   - Scope
     - DetectMode: checks existence of auth/contractor.json
     - VerifyContractorPassword: verifies and returns Contractor mode
