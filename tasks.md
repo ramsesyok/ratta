@@ -301,7 +301,7 @@
   - Acceptance
     - Selecting a category loads and displays issues
 
-- [ ] TASK-0606 Implement IssueDetailDialog
+- [x] TASK-0606 Implement IssueDetailDialog
   - Scope
     - View mode by default; edit mode after explicit action
     - UpdateIssue flow with required field validation
