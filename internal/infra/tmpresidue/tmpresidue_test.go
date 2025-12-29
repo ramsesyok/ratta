@@ -112,3 +112,23 @@ func TestScanAndHandle_DeleteFailureRecorded(t *testing.T) {
 		t.Fatalf("expected temp file to remain, err=%v", statErr)
 	}
 }
+
+func TestIsTmpArtifact_DetectsPattern(t *testing.T) {
+	// .tmp. を含むファイル名が検出されることを確認する。
+	if !isTmpArtifact("issue.json.tmp.123") {
+		t.Fatal("expected tmp artifact to be true")
+	}
+	if isTmpArtifact("issue.json") {
+		t.Fatal("expected tmp artifact to be false")
+	}
+}
+
+func TestShouldSkipDir_Rules(t *testing.T) {
+	// .tmp_rename は除外されず、ドット始まりは除外されることを確認する。
+	if shouldSkipDir(".tmp_rename") {
+		t.Fatal("expected .tmp_rename to be included")
+	}
+	if !shouldSkipDir(".git") {
+		t.Fatal("expected .git to be excluded")
+	}
+}

@@ -134,3 +134,76 @@ func TestSaveAll_RollbackOnFailure(t *testing.T) {
 		t.Fatalf("expected rollback to delete first file, err=%v", statErr)
 	}
 }
+
+func TestSaveAll_EmptyInputs(t *testing.T) {
+	// 入力が空の場合に空結果とロールバック関数が返ることを確認する。
+	records, rollback, err := SaveAll("dir", "issue", nil)
+	if err != nil {
+		t.Fatalf("SaveAll error: %v", err)
+	}
+	if len(records) != 0 {
+		t.Fatalf("unexpected records: %+v", records)
+	}
+	if rollback == nil {
+		t.Fatal("expected rollback to be set")
+	}
+}
+
+func TestTrimToLength_Bounds(t *testing.T) {
+	// 最大長が0以下の場合は空文字が返ることを確認する。
+	if got := trimToLength("abc", 0); got != "" {
+		t.Fatalf("unexpected trimmed value: %s", got)
+	}
+}
+
+func TestSplitExt_NoExtension(t *testing.T) {
+	// 拡張子が無い場合にそのまま返ることを確認する。
+	name, ext := splitExt("README")
+	if name != "README" || ext != "" {
+		t.Fatalf("unexpected split: %s %s", name, ext)
+	}
+}
+
+func TestRemoveAll_ReportsError(t *testing.T) {
+	// 削除失敗が集約されることを確認する。
+	previousRemove := removeFile
+	removeFile = func(string) error { return errors.New("remove failed") }
+	t.Cleanup(func() { removeFile = previousRemove })
+
+	err := removeAll([]SavedAttachment{{FullPath: "path"}})
+	if err == nil {
+		t.Fatal("expected remove error")
+	}
+}
+
+func TestWriteWithTemp_CloseFailure(t *testing.T) {
+	// Close 失敗時にエラーが返ることを確認する。
+	dir := t.TempDir()
+	previousCreate := createTempFile
+	createTempFile = func(dir, base string) (io.WriteCloser, string, error) {
+		tmpPath := filepath.Join(dir, base+".tmp.1.2")
+		// #nosec G304 -- テスト用ディレクトリ配下の一時ファイルのみを作成する。
+		file, err := os.OpenFile(tmpPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
+		if err != nil {
+			return nil, "", fmt.Errorf("open temp file: %w", err)
+		}
+		return &failingWriter{file: file}, tmpPath, nil
+	}
+	t.Cleanup(func() { createTempFile = previousCreate })
+
+	if err := writeWithTemp(dir, "file.txt", []byte("data")); err == nil {
+		t.Fatal("expected writeWithTemp error")
+	}
+}
+
+func TestWriteWithTemp_RenameFailure(t *testing.T) {
+	// リネーム失敗時にエラーとなることを確認する。
+	dir := t.TempDir()
+	previousRename := renameFile
+	renameFile = func(_, _ string) error { return errors.New("rename failed") }
+	t.Cleanup(func() { renameFile = previousRename })
+
+	if err := writeWithTemp(dir, "file.txt", []byte("data")); err == nil {
+		t.Fatal("expected rename error")
+	}
+}

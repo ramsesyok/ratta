@@ -8,11 +8,12 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"ratta/internal/domain/id"
 	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	"ratta/internal/domain/id"
 )
 
 const (

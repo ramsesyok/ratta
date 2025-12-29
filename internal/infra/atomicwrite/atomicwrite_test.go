@@ -36,6 +36,19 @@ func (w *failingWriter) Close() error {
 	return nil
 }
 
+type closeFailWriter struct {
+	file *os.File
+}
+
+func (w *closeFailWriter) Write(p []byte) (int, error) {
+	return w.file.Write(p)
+}
+
+func (w *closeFailWriter) Close() error {
+	_ = w.file.Close()
+	return errors.New("close failed")
+}
+
 func TestWriteFile_Success(t *testing.T) {
 	// DD-PERSIST-002 の手順で正常に置き換えられることを確認する。
 	dir := t.TempDir()
@@ -130,6 +143,62 @@ func TestWriteFile_WriteFailureCleansTemp(t *testing.T) {
 	tmpPath := filepath.Join(dir, "issue.json.tmp."+itoa(os.Getpid())+".1700000002")
 	if _, statErr := os.Stat(tmpPath); !os.IsNotExist(statErr) {
 		t.Fatalf("expected temp file cleanup, got err=%v", statErr)
+	}
+}
+
+func TestWriteFile_WriteFailureCleanupError(t *testing.T) {
+	// 書き込み失敗時に削除が失敗するとエラーに反映されることを確認する。
+	dir := t.TempDir()
+	targetPath := filepath.Join(dir, "issue.json")
+
+	previousNow := now
+	now = func() time.Time { return time.Unix(1700000003, 0) }
+	t.Cleanup(func() { now = previousNow })
+
+	previousRemove := removeFile
+	removeFile = func(string) error { return errors.New("remove failed") }
+	t.Cleanup(func() { removeFile = previousRemove })
+
+	previousCreate := createTempFile
+	createTempFile = func(dir, base string) (io.WriteCloser, string, error) {
+		tmpPath := filepath.Join(dir, base+".tmp."+itoa(os.Getpid())+".1700000003")
+		// #nosec G304 -- テスト用ディレクトリ配下の一時ファイルのみを作成する。
+		file, err := os.OpenFile(tmpPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
+		if err != nil {
+			return nil, "", fmt.Errorf("open temp file: %w", err)
+		}
+		return &failingWriter{file: file}, tmpPath, nil
+	}
+	t.Cleanup(func() { createTempFile = previousCreate })
+
+	if err := WriteFile(targetPath, []byte("new")); err == nil {
+		t.Fatal("expected write error with cleanup failure")
+	}
+}
+
+func TestWriteFile_CloseFailureCleanup(t *testing.T) {
+	// Close 失敗時にエラーが返ることを確認する。
+	dir := t.TempDir()
+	targetPath := filepath.Join(dir, "issue.json")
+
+	previousNow := now
+	now = func() time.Time { return time.Unix(1700000004, 0) }
+	t.Cleanup(func() { now = previousNow })
+
+	previousCreate := createTempFile
+	createTempFile = func(dir, base string) (io.WriteCloser, string, error) {
+		tmpPath := filepath.Join(dir, base+".tmp."+itoa(os.Getpid())+".1700000004")
+		// #nosec G304 -- テスト用ディレクトリ配下の一時ファイルのみを作成する。
+		file, err := os.OpenFile(tmpPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
+		if err != nil {
+			return nil, "", fmt.Errorf("open temp file: %w", err)
+		}
+		return &closeFailWriter{file: file}, tmpPath, nil
+	}
+	t.Cleanup(func() { createTempFile = previousCreate })
+
+	if err := WriteFile(targetPath, []byte("new")); err == nil {
+		t.Fatal("expected close error")
 	}
 }
 

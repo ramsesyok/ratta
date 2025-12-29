@@ -72,6 +72,19 @@ func TestSaveLastProjectRoot_UpdatesPath(t *testing.T) {
 	}
 }
 
+func TestSaveLastProjectRoot_LoadError(t *testing.T) {
+	// 既存設定が破損している場合に保存が失敗することを確認する。
+	dir := t.TempDir()
+	repo := NewRepository(filepath.Join(dir, "ratta.exe"))
+
+	if err := os.WriteFile(filepath.Join(dir, "config.json"), []byte("{"), 0o600); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+	if err := repo.SaveLastProjectRoot("C:/proj"); err == nil {
+		t.Fatal("expected save last project root error")
+	}
+}
+
 func TestSave_AtomicWriteFailure(t *testing.T) {
 	// atomic write に失敗した場合にエラーが返ることを確認する。
 	dir := t.TempDir()

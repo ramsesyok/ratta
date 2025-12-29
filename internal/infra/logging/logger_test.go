@@ -84,3 +84,61 @@ func TestLogger_RespectsLevel(t *testing.T) {
 		t.Fatalf("expected no log output, err=%v", statErr)
 	}
 }
+
+func TestLogger_DebugAndError(t *testing.T) {
+	// Debug と Error が出力されることを確認する。
+	dir := t.TempDir()
+	logger := NewLogger(filepath.Join(dir, "ratta.exe"), LevelDebug)
+
+	logger.Debug("debug", map[string]any{"k": "v"})
+	logger.Error("error", map[string]any{"k": "v"})
+
+	// #nosec G304 -- テスト用ディレクトリ配下のログのみを読むため安全。
+	data, readErr := os.ReadFile(filepath.Join(dir, "logs", "ratta.log"))
+	if readErr != nil {
+		t.Fatalf("read log: %v", readErr)
+	}
+	if len(data) == 0 {
+		t.Fatal("expected log output")
+	}
+}
+
+func TestLevelString_Default(t *testing.T) {
+	// 未知レベルが error 扱いになることを確認する。
+	if levelString(Level(999)) != "error" {
+		t.Fatal("expected default level string to be error")
+	}
+}
+
+func TestSetLevel_ChangesLevel(t *testing.T) {
+	// SetLevel がログレベルを更新することを確認する。
+	logger := NewLogger("ratta.exe", LevelInfo)
+	logger.SetLevel(LevelError)
+	if logger.lvl != LevelError {
+		t.Fatalf("unexpected level: %v", logger.lvl)
+	}
+}
+
+func TestEnsureDir_Error(t *testing.T) {
+	// ディレクトリ作成に失敗した場合にエラーとなることを確認する。
+	dir := t.TempDir()
+	filePath := filepath.Join(dir, "file")
+	if err := os.WriteFile(filePath, []byte("x"), 0o600); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+	if err := ensureDir(filePath); err == nil {
+		t.Fatal("expected ensureDir error")
+	}
+}
+
+func TestLogger_DebugBelowLevel(t *testing.T) {
+	// 出力レベル未満のログが出力されないことを確認する。
+	dir := t.TempDir()
+	logger := NewLogger(filepath.Join(dir, "ratta.exe"), LevelError)
+
+	logger.Debug("debug", nil)
+
+	if _, statErr := os.Stat(filepath.Join(dir, "logs", "ratta.log")); !os.IsNotExist(statErr) {
+		t.Fatalf("expected no log output, err=%v", statErr)
+	}
+}

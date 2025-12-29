@@ -3,13 +3,15 @@ package modedetect
 
 import (
 	"bytes"
+	"errors"
 	"os"
 	"path/filepath"
+	"testing"
+
 	"ratta/internal/domain/mode"
 	"ratta/internal/infra/crypto"
 	"ratta/internal/infra/jsonfmt"
 	"ratta/internal/infra/schema"
-	"testing"
 )
 
 func TestDetectMode_NoAuthFile(t *testing.T) {
@@ -116,5 +118,42 @@ func TestVerifyContractorPassword_WrongPassword(t *testing.T) {
 	service := NewService(filepath.Join(dir, "ratta.exe"), nil)
 	if _, verifyErr := service.VerifyContractorPassword("wrong"); verifyErr == nil {
 		t.Fatal("expected verification error")
+	}
+}
+
+func TestVerifyContractorPassword_SchemaInvalid(t *testing.T) {
+	// スキーマ不整合の contractor.json は検証に失敗することを確認する。
+	dir := t.TempDir()
+	authPath := filepath.Join(dir, "auth", "contractor.json")
+	if err := os.MkdirAll(filepath.Dir(authPath), 0o750); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	if writeErr := os.WriteFile(authPath, []byte(`{"format_version":1}`), 0o600); writeErr != nil {
+		t.Fatalf("write auth: %v", writeErr)
+	}
+
+	validator, err := schema.NewValidatorFromDir(filepath.Join("..", "..", "..", "schemas"))
+	if err != nil {
+		t.Fatalf("NewValidatorFromDir error: %v", err)
+	}
+	service := NewService(filepath.Join(dir, "ratta.exe"), validator)
+	if _, err := service.VerifyContractorPassword("secret"); err == nil {
+		t.Fatal("expected schema invalid error")
+	}
+}
+
+func TestDetectMode_ReadError(t *testing.T) {
+	// 読み取りエラー時に DetectMode がエラーを返すことを確認する。
+	dir := t.TempDir()
+	service := NewService(filepath.Join(dir, "ratta.exe"), nil)
+
+	previousStat := statFile
+	statFile = func(string) (os.FileInfo, error) {
+		return nil, errors.New("stat failed")
+	}
+	t.Cleanup(func() { statFile = previousStat })
+
+	if _, _, err := service.DetectMode(); err == nil {
+		t.Fatal("expected detect mode error")
 	}
 }

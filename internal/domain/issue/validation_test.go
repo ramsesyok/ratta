@@ -84,3 +84,36 @@ func TestValidateComment_BodySizeAndAttachments(t *testing.T) {
 		t.Fatal("expected comment validation errors")
 	}
 }
+
+func TestValidationError_ErrorMessage(t *testing.T) {
+	// 単一エラーが "field: message" 形式になることを確認する。
+	err := ValidationError{Field: "title", Message: "required"}
+	if err.Error() != "title: required" {
+		t.Fatalf("unexpected error message: %s", err.Error())
+	}
+}
+
+func TestValidationErrors_ErrorMessage(t *testing.T) {
+	// 複数エラーがカンマ区切りで連結されることを確認する。
+	errs := ValidationErrors{
+		{Field: "title", Message: "required"},
+		{Field: "description", Message: "required"},
+	}
+	if errs.Error() != "title: required, description: required" {
+		t.Fatalf("unexpected error message: %s", errs.Error())
+	}
+}
+
+func TestPrefixErrors_AddsPrefix(t *testing.T) {
+	// prefixErrors がフィールド名に接頭辞を付与することを確認する。
+	errs := ValidationErrors{
+		{Field: "body", Message: "required"},
+	}
+	prefixed := prefixErrors("comments[0].", errs)
+	if len(prefixed) != 1 {
+		t.Fatalf("unexpected error count: %d", len(prefixed))
+	}
+	if prefixed[0].Field != "comments[0].body" {
+		t.Fatalf("unexpected field: %s", prefixed[0].Field)
+	}
+}
