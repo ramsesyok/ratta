@@ -313,7 +313,7 @@
   - Acceptance
     - Detail reloads from disk on open/reload
 
-- [ ] TASK-0607 Implement ErrorDetailDialog
+- [x] TASK-0607 Implement ErrorDetailDialog
   - Scope
     - Displays aggregated errors from stores/errors
     - Supports scope filtering (all/category)
