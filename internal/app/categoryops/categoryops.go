@@ -1,3 +1,5 @@
+// Package categoryops はカテゴリ操作のユースケースを提供し、ファイルI/Oの詳細は扱わない。
+// UI 表示やドメイン検証の内部実装には踏み込まない。
 package categoryops
 
 import (
@@ -6,12 +8,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
-
 	"ratta/internal/domain/issue"
-	mod "ratta/internal/domain/mode"
 	"ratta/internal/infra/atomicwrite"
 	"ratta/internal/infra/jsonfmt"
+	"strings"
+
+	mod "ratta/internal/domain/mode"
 )
 
 // Category は DD-LOAD-002 のカテゴリ情報を表す。
@@ -32,6 +34,14 @@ func NewService(projectRoot string) *Service {
 }
 
 // CreateCategory は DD-BE-003 のカテゴリ作成を行う。
+// 目的: 課題カテゴリ用のディレクトリを作成し識別情報を返す。
+// 入力: name はカテゴリ名、currentMode は操作モード。
+// 出力: 作成した Category とエラー。
+// エラー: 権限不足、カテゴリ名検証失敗、同名衝突、作成失敗時に返す。
+// 副作用: プロジェクトルート配下にディレクトリを作成する。
+// 並行性: 同一プロジェクトルートへの同時実行は呼び出し側で排他する。
+// 不変条件: 作成後のカテゴリ名は入力 name と一致する。
+// 関連DD: DD-BE-003
 func (s *Service) CreateCategory(name string, currentMode mod.Mode) (Category, error) {
 	if currentMode != mod.ModeContractor {
 		return Category{}, errors.New("permission denied")
@@ -43,13 +53,21 @@ func (s *Service) CreateCategory(name string, currentMode mod.Mode) (Category, e
 		return Category{}, err
 	}
 	path := filepath.Join(s.projectRoot, name)
-	if err := os.MkdirAll(path, 0o755); err != nil {
+	if err := os.MkdirAll(path, 0o750); err != nil {
 		return Category{}, fmt.Errorf("create category: %w", err)
 	}
 	return Category{Name: name, Path: path}, nil
 }
 
 // DeleteCategory は DD-BE-003 のカテゴリ削除を行う。
+// 目的: 空のカテゴリディレクトリを削除する。
+// 入力: name はカテゴリ名、currentMode は操作モード。
+// 出力: 成功時は nil、失敗時はエラー。
+// エラー: 権限不足、読み取り専用、非空、削除失敗時に返す。
+// 副作用: カテゴリディレクトリを削除する。
+// 並行性: 同時削除は想定しない。
+// 不変条件: 削除対象は .json と .files を含まないことを確認する。
+// 関連DD: DD-BE-003
 func (s *Service) DeleteCategory(name string, currentMode mod.Mode) error {
 	if currentMode != mod.ModeContractor {
 		return errors.New("permission denied")
@@ -73,13 +91,22 @@ func (s *Service) DeleteCategory(name string, currentMode mod.Mode) error {
 			return errors.New("category not empty")
 		}
 	}
-	if err := os.RemoveAll(path); err != nil {
-		return fmt.Errorf("delete category: %w", err)
+	removeErr := os.RemoveAll(path)
+	if removeErr != nil {
+		return fmt.Errorf("delete category: %w", removeErr)
 	}
 	return nil
 }
 
 // RenameCategory は DD-BE-003 のカテゴリ名変更を行う。
+// 目的: カテゴリ名変更に伴いディレクトリと課題JSONを更新する。
+// 入力: oldName は旧カテゴリ名、newName は新カテゴリ名、currentMode は操作モード。
+// 出力: 更新後の Category とエラー。
+// エラー: 権限不足、検証失敗、衝突、リネーム失敗時に返す。
+// 副作用: ディレクトリ移動と課題JSONの書き換えを行う。
+// 並行性: 同時更新は想定しない。
+// 不変条件: 更新後の課題JSONの Category は newName。
+// 関連DD: DD-BE-003
 func (s *Service) RenameCategory(oldName, newName string, currentMode mod.Mode) (Category, error) {
 	if currentMode != mod.ModeContractor {
 		return Category{}, errors.New("permission denied")
@@ -103,7 +130,7 @@ func (s *Service) RenameCategory(oldName, newName string, currentMode mod.Mode) 
 
 	tmpRoot := filepath.Join(s.projectRoot, ".tmp_rename")
 	tmpPath := filepath.Join(tmpRoot, newName)
-	if err := os.MkdirAll(tmpRoot, 0o755); err != nil {
+	if err := os.MkdirAll(tmpRoot, 0o750); err != nil {
 		return Category{}, fmt.Errorf("create tmp_rename: %w", err)
 	}
 	if err := os.Rename(oldPath, tmpPath); err != nil {
@@ -111,7 +138,9 @@ func (s *Service) RenameCategory(oldName, newName string, currentMode mod.Mode) 
 	}
 
 	if err := s.updateIssueCategory(tmpPath, newName); err != nil {
-		_ = os.Rename(tmpPath, oldPath)
+		if renameErr := os.Rename(tmpPath, oldPath); renameErr != nil {
+			return Category{}, fmt.Errorf("rollback rename failed: %w; rollback error: %s", err, renameErr.Error())
+		}
 		return Category{}, err
 	}
 
@@ -166,6 +195,14 @@ func (s *Service) isReadOnly(name string) bool {
 }
 
 // updateIssueCategory は DD-BE-003 のカテゴリ名変更に伴う課題更新を行う。
+// 目的: カテゴリ配下の課題JSONに新カテゴリ名を反映する。
+// 入力: categoryPath は変更対象のカテゴリパス、newName は新カテゴリ名。
+// 出力: 成功時は nil、失敗時はエラー。
+// エラー: 読み取り・パース・書き込み失敗時に返す。
+// 副作用: 課題JSONを書き換える。
+// 並行性: 同時書き込みは想定しない。
+// 不変条件: 対象JSONの Category フィールドは newName に統一する。
+// 関連DD: DD-BE-003
 func (s *Service) updateIssueCategory(categoryPath, newName string) error {
 	entries, err := os.ReadDir(categoryPath)
 	if err != nil {
@@ -179,21 +216,22 @@ func (s *Service) updateIssueCategory(categoryPath, newName string) error {
 			continue
 		}
 		path := filepath.Join(categoryPath, entry.Name())
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return fmt.Errorf("read issue: %w", err)
+		// #nosec G304 -- カテゴリ配下の列挙結果のみを利用するため安全。
+		data, readErr := os.ReadFile(path)
+		if readErr != nil {
+			return fmt.Errorf("read issue: %w", readErr)
 		}
 		var parsed issue.Issue
-		if err := json.Unmarshal(data, &parsed); err != nil {
-			return fmt.Errorf("parse issue: %w", err)
+		if unmarshalErr := json.Unmarshal(data, &parsed); unmarshalErr != nil {
+			return fmt.Errorf("parse issue: %w", unmarshalErr)
 		}
 		parsed.Category = newName
-		updated, err := jsonfmt.MarshalIssue(parsed)
-		if err != nil {
-			return fmt.Errorf("marshal issue: %w", err)
+		updated, marshalErr := jsonfmt.MarshalIssue(parsed)
+		if marshalErr != nil {
+			return fmt.Errorf("marshal issue: %w", marshalErr)
 		}
-		if err := atomicwrite.WriteFile(path, updated); err != nil {
-			return fmt.Errorf("write issue: %w", err)
+		if writeErr := atomicwrite.WriteFile(path, updated); writeErr != nil {
+			return fmt.Errorf("write issue: %w", writeErr)
 		}
 	}
 	return nil

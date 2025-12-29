@@ -1,3 +1,4 @@
+// logger_test.go はログ出力とローテーションのテストを行い、UI統合は扱わない。
 package logging
 
 import (
@@ -29,17 +30,17 @@ func TestRotateIfNeeded_RotatesAndKeepsGenerations(t *testing.T) {
 		t.Fatalf("rotateIfNeeded error: %v", err)
 	}
 
-	if _, err := os.Stat(path + ".4"); !os.IsNotExist(err) {
-		t.Fatalf("expected no generation beyond max, err=%v", err)
+	if _, statErr := os.Stat(path + ".4"); !os.IsNotExist(statErr) {
+		t.Fatalf("expected no generation beyond max, err=%v", statErr)
 	}
-	if _, err := os.Stat(path + ".3"); err != nil {
-		t.Fatalf("expected generation 3 to exist, err=%v", err)
+	if _, statErr := os.Stat(path + ".3"); statErr != nil {
+		t.Fatalf("expected generation 3 to exist, err=%v", statErr)
 	}
-	if _, err := os.Stat(path + ".2"); err != nil {
-		t.Fatalf("expected generation 2 to exist, err=%v", err)
+	if _, statErr := os.Stat(path + ".2"); statErr != nil {
+		t.Fatalf("expected generation 2 to exist, err=%v", statErr)
 	}
-	if _, err := os.Stat(path + ".1"); err != nil {
-		t.Fatalf("expected generation 1 to exist, err=%v", err)
+	if _, statErr := os.Stat(path + ".1"); statErr != nil {
+		t.Fatalf("expected generation 1 to exist, err=%v", statErr)
 	}
 }
 
@@ -52,13 +53,14 @@ func TestLogger_WritesStructuredLog(t *testing.T) {
 		"detail": "value",
 	})
 
-	data, err := os.ReadFile(filepath.Join(dir, "logs", "ratta.log"))
-	if err != nil {
-		t.Fatalf("read log: %v", err)
+	// #nosec G304 -- テスト用ディレクトリ配下のログのみを読むため安全。
+	data, readErr := os.ReadFile(filepath.Join(dir, "logs", "ratta.log"))
+	if readErr != nil {
+		t.Fatalf("read log: %v", readErr)
 	}
 	var parsed map[string]any
-	if err := json.Unmarshal(data[:len(data)-1], &parsed); err != nil {
-		t.Fatalf("unmarshal log: %v", err)
+	if unmarshalErr := json.Unmarshal(data[:len(data)-1], &parsed); unmarshalErr != nil {
+		t.Fatalf("unmarshal log: %v", unmarshalErr)
 	}
 	if parsed["message"] != "hello" {
 		t.Fatalf("unexpected message: %v", parsed["message"])
@@ -78,7 +80,7 @@ func TestLogger_RespectsLevel(t *testing.T) {
 
 	logger.Info("skip", nil)
 
-	if _, err := os.Stat(filepath.Join(dir, "logs", "ratta.log")); !os.IsNotExist(err) {
-		t.Fatalf("expected no log output, err=%v", err)
+	if _, statErr := os.Stat(filepath.Join(dir, "logs", "ratta.log")); !os.IsNotExist(statErr) {
+		t.Fatalf("expected no log output, err=%v", statErr)
 	}
 }

@@ -1,6 +1,6 @@
 export namespace present {
 	
-	export class ApiErrorDTO {
+	export class APIErrorDTO {
 	    error_code: string;
 	    message: string;
 	    detail?: string;
@@ -8,7 +8,7 @@ export namespace present {
 	    hint?: string;
 	
 	    static createFrom(source: any = {}) {
-	        return new ApiErrorDTO(source);
+	        return new APIErrorDTO(source);
 	    }
 	
 	    constructor(source: any = {}) {
@@ -133,7 +133,7 @@ export namespace present {
 	export class Response {
 	    ok: boolean;
 	    data?: any;
-	    error?: ApiErrorDTO;
+	    error?: APIErrorDTO;
 	
 	    static createFrom(source: any = {}) {
 	        return new Response(source);
@@ -143,7 +143,7 @@ export namespace present {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.ok = source["ok"];
 	        this.data = source["data"];
-	        this.error = this.convertValues(source["error"], ApiErrorDTO);
+	        this.error = this.convertValues(source["error"], APIErrorDTO);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

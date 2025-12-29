@@ -1,3 +1,5 @@
+// Package categoryscan はカテゴリ一覧の走査を担い、書き込みやUI表示は扱わない。
+// 走査対象の正当性検証は上位層に委ねる。
 package categoryscan
 
 import (
@@ -22,13 +24,21 @@ type ScanResult struct {
 }
 
 // Scan は DD-LOAD-002 のルールでカテゴリを走査する。
+// 目的: プロジェクトルート配下のカテゴリを一覧化する。
+// 入力: root はプロジェクトルートパス。
+// 出力: ScanResult とエラー。
+// エラー: 走査対象ディレクトリの読み取りに失敗した場合に返す。
+// 副作用: なし。
+// 並行性: 読み取りのみでスレッドセーフ。
+// 不変条件: 返却するカテゴリ一覧は名前順にソートされる。
+// 関連DD: DD-LOAD-002
 func Scan(root string) (ScanResult, error) {
 	entries, err := os.ReadDir(root)
 	if err != nil {
 		return ScanResult{}, fmt.Errorf("read project root: %w", err)
 	}
 
-	var categories []Category
+	categories := make([]Category, 0, len(entries))
 	readOnlyNames := make(map[string]struct{})
 
 	for _, entry := range entries {
@@ -38,9 +48,9 @@ func Scan(root string) (ScanResult, error) {
 		name := entry.Name()
 		if name == ".tmp_rename" {
 			tmpPath := filepath.Join(root, name)
-			tmpEntries, err := os.ReadDir(tmpPath)
-			if err != nil {
-				return ScanResult{}, fmt.Errorf("read .tmp_rename: %w", err)
+			tmpEntries, readErr := os.ReadDir(tmpPath)
+			if readErr != nil {
+				return ScanResult{}, fmt.Errorf("read .tmp_rename: %w", readErr)
 			}
 			for _, tmpEntry := range tmpEntries {
 				if !tmpEntry.IsDir() {

@@ -1,12 +1,12 @@
+// issuescan_test.go は課題走査のテストを行い、UI統合は扱わない。
 package issuescan
 
 import (
 	"os"
 	"path/filepath"
-	"testing"
-
 	"ratta/internal/infra/jsonfmt"
 	"ratta/internal/infra/schema"
+	"testing"
 )
 
 func TestScanCategory_ClassifiesIssues(t *testing.T) {
@@ -33,11 +33,11 @@ func TestScanCategory_ClassifiesIssues(t *testing.T) {
 		t.Fatalf("MarshalIssue error: %v", err)
 	}
 
-	if err := os.WriteFile(filepath.Join(dir, "valid.json"), validData, 0o600); err != nil {
-		t.Fatalf("write valid: %v", err)
+	if writeErr := os.WriteFile(filepath.Join(dir, "valid.json"), validData, 0o600); writeErr != nil {
+		t.Fatalf("write valid: %v", writeErr)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "invalid.json"), []byte("{"), 0o600); err != nil {
-		t.Fatalf("write invalid: %v", err)
+	if writeErr := os.WriteFile(filepath.Join(dir, "invalid.json"), []byte("{"), 0o600); writeErr != nil {
+		t.Fatalf("write invalid: %v", writeErr)
 	}
 
 	schemaInvalid := map[string]any{
@@ -57,8 +57,8 @@ func TestScanCategory_ClassifiesIssues(t *testing.T) {
 	if err != nil {
 		t.Fatalf("MarshalIssue error: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "schema_invalid.json"), invalidSchemaData, 0o600); err != nil {
-		t.Fatalf("write schema invalid: %v", err)
+	if writeErr := os.WriteFile(filepath.Join(dir, "schema_invalid.json"), invalidSchemaData, 0o600); writeErr != nil {
+		t.Fatalf("write schema invalid: %v", writeErr)
 	}
 
 	validator, err := schema.NewValidatorFromDir(filepath.Join("..", "..", "..", "schemas"))

@@ -1,15 +1,15 @@
+// modedetect_test.go はモード判定のテストを行い、UI統合は扱わない。
 package modedetect
 
 import (
 	"bytes"
 	"os"
 	"path/filepath"
-	"testing"
-
 	"ratta/internal/domain/mode"
 	"ratta/internal/infra/crypto"
 	"ratta/internal/infra/jsonfmt"
 	"ratta/internal/infra/schema"
+	"testing"
 )
 
 func TestDetectMode_NoAuthFile(t *testing.T) {
@@ -33,7 +33,7 @@ func TestDetectMode_WithAuthFile(t *testing.T) {
 	// auth/contractor.json があれば Vendor かつパスワード要求になることを確認する。
 	dir := t.TempDir()
 	authPath := filepath.Join(dir, "auth", "contractor.json")
-	if err := os.MkdirAll(filepath.Dir(authPath), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(authPath), 0o750); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
 	if err := os.WriteFile(authPath, []byte("{}"), 0o600); err != nil {
@@ -57,7 +57,7 @@ func TestVerifyContractorPassword_Success(t *testing.T) {
 	// 正しいパスワードで Contractor に切り替わることを確認する。
 	dir := t.TempDir()
 	authPath := filepath.Join(dir, "auth", "contractor.json")
-	if err := os.MkdirAll(filepath.Dir(authPath), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(authPath), 0o750); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
 
@@ -72,8 +72,8 @@ func TestVerifyContractorPassword_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("MarshalContractor error: %v", err)
 	}
-	if err := os.WriteFile(authPath, data, 0o600); err != nil {
-		t.Fatalf("write auth: %v", err)
+	if writeErr := os.WriteFile(authPath, data, 0o600); writeErr != nil {
+		t.Fatalf("write auth: %v", writeErr)
 	}
 
 	validator, err := schema.NewValidatorFromDir(filepath.Join("..", "..", "..", "schemas"))
@@ -94,7 +94,7 @@ func TestVerifyContractorPassword_WrongPassword(t *testing.T) {
 	// 誤ったパスワードでは Contractor にならないことを確認する。
 	dir := t.TempDir()
 	authPath := filepath.Join(dir, "auth", "contractor.json")
-	if err := os.MkdirAll(filepath.Dir(authPath), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(authPath), 0o750); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
 
@@ -109,12 +109,12 @@ func TestVerifyContractorPassword_WrongPassword(t *testing.T) {
 	if err != nil {
 		t.Fatalf("MarshalContractor error: %v", err)
 	}
-	if err := os.WriteFile(authPath, data, 0o600); err != nil {
-		t.Fatalf("write auth: %v", err)
+	if writeErr := os.WriteFile(authPath, data, 0o600); writeErr != nil {
+		t.Fatalf("write auth: %v", writeErr)
 	}
 
 	service := NewService(filepath.Join(dir, "ratta.exe"), nil)
-	if _, err := service.VerifyContractorPassword("wrong"); err == nil {
+	if _, verifyErr := service.VerifyContractorPassword("wrong"); verifyErr == nil {
 		t.Fatal("expected verification error")
 	}
 }

@@ -1,3 +1,4 @@
+// categoryscan_test.go はカテゴリ走査のテストを行い、統合的なUI検証は扱わない。
 package categoryscan
 
 import (
@@ -9,19 +10,19 @@ import (
 func TestScan_FlatAndReadOnly(t *testing.T) {
 	// 直下ディレクトリのみをカテゴリとし、.tmp_rename は読み取り専用扱いになることを確認する。
 	root := t.TempDir()
-	if err := os.MkdirAll(filepath.Join(root, "catA"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, "catA"), 0o750); err != nil {
 		t.Fatalf("mkdir catA: %v", err)
 	}
-	if err := os.MkdirAll(filepath.Join(root, ".git"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, ".git"), 0o750); err != nil {
 		t.Fatalf("mkdir .git: %v", err)
 	}
-	if err := os.MkdirAll(filepath.Join(root, ".hidden"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, ".hidden"), 0o750); err != nil {
 		t.Fatalf("mkdir .hidden: %v", err)
 	}
-	if err := os.MkdirAll(filepath.Join(root, "catA", "nested"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, "catA", "nested"), 0o750); err != nil {
 		t.Fatalf("mkdir nested: %v", err)
 	}
-	if err := os.MkdirAll(filepath.Join(root, ".tmp_rename", "catB"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, ".tmp_rename", "catB"), 0o750); err != nil {
 		t.Fatalf("mkdir tmp_rename: %v", err)
 	}
 

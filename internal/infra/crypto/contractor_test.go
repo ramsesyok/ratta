@@ -2,6 +2,7 @@ package crypto
 
 import (
 	"bytes"
+	"errors"
 	"testing"
 )
 
@@ -46,8 +47,11 @@ func TestVerifyPassword_WrongPassword(t *testing.T) {
 	}
 
 	ok, err := VerifyPassword(auth, "wrong")
-	if err != nil {
-		t.Fatalf("VerifyPassword error: %v", err)
+	if err == nil {
+		t.Fatal("expected password mismatch error")
+	}
+	if !errors.Is(err, ErrPasswordMismatch) {
+		t.Fatalf("unexpected error: %v", err)
 	}
 	if ok {
 		t.Fatal("expected password verification to fail")

@@ -1,14 +1,15 @@
+// Package present はフロントエンド公開用のDTO定義を担い、変換ロジックは別ファイルで扱う。
 package present
 
 // Response は DD-BE-003 の標準レスポンス形式を表す。
 type Response struct {
 	Ok    bool         `json:"ok"`
 	Data  any          `json:"data,omitempty"`
-	Error *ApiErrorDTO `json:"error,omitempty"`
+	Error *APIErrorDTO `json:"error,omitempty"`
 }
 
-// ApiErrorDTO は DD-BE-003 の共通エラーを表す。
-type ApiErrorDTO struct {
+// APIErrorDTO は DD-BE-003 の共通エラーを表す。
+type APIErrorDTO struct {
 	ErrorCode  string `json:"error_code"`
 	Message    string `json:"message"`
 	Detail     string `json:"detail,omitempty"`

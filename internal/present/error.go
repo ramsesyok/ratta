@@ -1,10 +1,11 @@
+// Package present は UI へ返すDTOとエラー表現を提供し、ドメイン実装は扱わない。
+// エラー分類ロジックはここで完結させる。
 package present
 
 import (
 	"errors"
-	"strings"
-
 	"ratta/internal/domain/issue"
+	"strings"
 )
 
 const (
@@ -26,15 +27,23 @@ func Fail(err error) Response {
 	return Response{Ok: false, Error: MapError(err)}
 }
 
-// MapError は DD-BE-003 の ApiErrorDTO へ変換する。
-func MapError(err error) *ApiErrorDTO {
+// MapError は DD-BE-003 の APIErrorDTO へ変換する。
+// 目的: 内部エラーをUI向けの共通エラー形式に正規化する。
+// 入力: err は内部エラー。
+// 出力: APIErrorDTO へのポインタ。
+// エラー: なし。
+// 副作用: なし。
+// 並行性: スレッドセーフ。
+// 不変条件: err が nil の場合は nil を返す。
+// 関連DD: DD-BE-003
+func MapError(err error) *APIErrorDTO {
 	if err == nil {
 		return nil
 	}
 
 	var validationErrors issue.ValidationErrors
 	if errors.As(err, &validationErrors) {
-		return &ApiErrorDTO{
+		return &APIErrorDTO{
 			ErrorCode: ErrorValidation,
 			Message:   "Validation failed.",
 			Detail:    err.Error(),
@@ -42,7 +51,7 @@ func MapError(err error) *ApiErrorDTO {
 	}
 	var validationError *issue.ValidationError
 	if errors.As(err, &validationError) {
-		return &ApiErrorDTO{
+		return &APIErrorDTO{
 			ErrorCode: ErrorValidation,
 			Message:   "Validation failed.",
 			Detail:    err.Error(),
@@ -51,7 +60,7 @@ func MapError(err error) *ApiErrorDTO {
 
 	message := err.Error()
 	code := classifyError(message)
-	return &ApiErrorDTO{
+	return &APIErrorDTO{
 		ErrorCode: code,
 		Message:   message,
 	}

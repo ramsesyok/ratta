@@ -1,3 +1,5 @@
+// Package issueops は課題の作成・更新・一覧取得のユースケースを提供し、UI 表示は扱わない。
+// 永続化の詳細は infra 層に委ねる。
 package issueops
 
 import (
@@ -6,16 +8,16 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
-
 	"ratta/internal/domain/id"
 	"ratta/internal/domain/issue"
-	mod "ratta/internal/domain/mode"
 	"ratta/internal/domain/timeutil"
 	"ratta/internal/infra/atomicwrite"
 	"ratta/internal/infra/attachmentstore"
 	"ratta/internal/infra/jsonfmt"
 	"ratta/internal/infra/schema"
+	"sort"
+
+	mod "ratta/internal/domain/mode"
 )
 
 // IssueDetail は DD-LOAD-004/DD-DATA-003 の課題詳細を表す。
@@ -120,6 +122,14 @@ func (s *Service) GetIssue(category, issueID string) (IssueDetail, error) {
 }
 
 // CreateIssue は DD-BE-003 の課題作成を行う。
+// 目的: 入力内容から新規課題を生成し永続化する。
+// 入力: category はカテゴリ名、currentMode は操作モード、input は課題入力。
+// 出力: 作成した IssueDetail とエラー。
+// エラー: 入力検証失敗、ID生成失敗、保存失敗時に返す。
+// 副作用: 課題JSONの新規作成を行う。
+// 並行性: 同一カテゴリへの同時作成は呼び出し側で排他する。
+// 不変条件: 作成後の Issue は検証済みで Version=1。
+// 関連DD: DD-BE-003
 func (s *Service) CreateIssue(category string, currentMode mod.Mode, input IssueCreateInput) (IssueDetail, error) {
 	if err := s.ensureCategoryDir(category); err != nil {
 		return IssueDetail{}, err
@@ -152,14 +162,22 @@ func (s *Service) CreateIssue(category string, currentMode mod.Mode, input Issue
 	}
 
 	path := filepath.Join(s.projectRoot, category, issueID+".json")
-	if err := s.writeIssue(path, newIssue); err != nil {
-		return IssueDetail{}, err
+	if writeErr := s.writeIssue(path, newIssue); writeErr != nil {
+		return IssueDetail{}, writeErr
 	}
 
 	return IssueDetail{Issue: newIssue, Path: path}, nil
 }
 
 // UpdateIssue は DD-BE-003 の課題更新を行う。
+// 目的: 既存課題を更新し状態遷移を適用する。
+// 入力: category と issueID は対象識別子、currentMode は操作モード、input は更新内容。
+// 出力: 更新後の IssueDetail とエラー。
+// エラー: 読み込み失敗、禁止状態、検証失敗、保存失敗時に返す。
+// 副作用: 既存課題JSONを上書きする。
+// 並行性: 同一課題への同時更新は想定しない。
+// 不変条件: 更新後の課題は検証済みで UpdatedAt が更新される。
+// 関連DD: DD-BE-003
 func (s *Service) UpdateIssue(category, issueID string, currentMode mod.Mode, input IssueUpdateInput) (IssueDetail, error) {
 	path := filepath.Join(s.projectRoot, category, issueID+".json")
 	current, err := s.readIssue(path, category)
@@ -189,14 +207,22 @@ func (s *Service) UpdateIssue(category, issueID string, currentMode mod.Mode, in
 		return IssueDetail{}, errs
 	}
 
-	if err := s.writeIssue(path, updated); err != nil {
-		return IssueDetail{}, err
+	if writeErr := s.writeIssue(path, updated); writeErr != nil {
+		return IssueDetail{}, writeErr
 	}
 
 	return IssueDetail{Issue: updated, Path: path}, nil
 }
 
 // AddComment は DD-BE-003/DD-DATA-004 のコメント追加を行う。
+// 目的: 課題にコメントと添付情報を追加する。
+// 入力: category と issueID は対象識別子、currentMode は操作モード、input はコメント入力。
+// 出力: 更新後の IssueDetail とエラー。
+// エラー: 読み込み失敗、添付保存失敗、検証失敗、保存失敗時に返す。
+// 副作用: 添付ファイルの保存と課題JSONの更新を行う。
+// 並行性: 同一課題への同時更新は想定しない。
+// 不変条件: 添付保存に失敗した場合は課題JSONを更新しない。
+// 関連DD: DD-BE-003, DD-DATA-004
 func (s *Service) AddComment(category, issueID string, currentMode mod.Mode, input CommentCreateInput) (IssueDetail, error) {
 	path := filepath.Join(s.projectRoot, category, issueID+".json")
 	current, err := s.readIssue(path, category)
@@ -220,7 +246,7 @@ func (s *Service) AddComment(category, issueID string, currentMode mod.Mode, inp
 	}
 
 	issueDir := filepath.Join(s.projectRoot, category)
-	var storeInputs []attachmentstore.Input
+	storeInputs := make([]attachmentstore.Input, 0, len(input.Attachments))
 	for _, attachment := range input.Attachments {
 		storeInputs = append(storeInputs, attachmentstore.Input{
 			OriginalName: attachment.OriginalName,
@@ -257,22 +283,34 @@ func (s *Service) AddComment(category, issueID string, currentMode mod.Mode, inp
 
 	if errs := issue.ValidateIssue(updated); len(errs) > 0 {
 		if rollback != nil {
-			_ = rollback()
+			if rollbackErr := rollback(); rollbackErr != nil {
+				return IssueDetail{}, fmt.Errorf("rollback attachments failed: %w; rollback error: %s", errs, rollbackErr.Error())
+			}
 		}
 		return IssueDetail{}, errs
 	}
 
-	if err := writeIssueFunc(s, path, updated); err != nil {
+	if writeErr := writeIssueFunc(s, path, updated); writeErr != nil {
 		if rollback != nil {
-			_ = rollback()
+			if rollbackErr := rollback(); rollbackErr != nil {
+				return IssueDetail{}, fmt.Errorf("rollback attachments failed: %w; rollback error: %s", writeErr, rollbackErr.Error())
+			}
 		}
-		return IssueDetail{}, err
+		return IssueDetail{}, writeErr
 	}
 
 	return IssueDetail{Issue: updated, Path: path}, nil
 }
 
 // ListIssues は DD-BE-003/DD-LOAD-003 の一覧取得を行う。
+// 目的: 指定カテゴリの課題一覧を読み込みページングする。
+// 入力: category はカテゴリ名、query はページング条件。
+// 出力: IssueList とエラー。
+// エラー: カテゴリ読み取り失敗時に返す。
+// 副作用: なし。
+// 並行性: 読み取りのみでスレッドセーフ。
+// 不変条件: 返却する一覧は sort_by/sort_order に従う。
+// 関連DD: DD-BE-003, DD-LOAD-003
 func (s *Service) ListIssues(category string, query IssueListQuery) (IssueList, error) {
 	categoryPath := filepath.Join(s.projectRoot, category)
 	entries, err := os.ReadDir(categoryPath)
@@ -280,7 +318,7 @@ func (s *Service) ListIssues(category string, query IssueListQuery) (IssueList, 
 		return IssueList{}, fmt.Errorf("read category: %w", err)
 	}
 
-	var items []IssueSummary
+	items := make([]IssueSummary, 0, len(entries))
 	for _, entry := range entries {
 		if entry.IsDir() {
 			continue
@@ -289,8 +327,8 @@ func (s *Service) ListIssues(category string, query IssueListQuery) (IssueList, 
 			continue
 		}
 		path := filepath.Join(categoryPath, entry.Name())
-		item, err := s.readIssue(path, category)
-		if err != nil {
+		item, readErr := s.readIssue(path, category)
+		if readErr != nil {
 			continue
 		}
 		items = append(items, IssueSummary{
@@ -322,23 +360,33 @@ func (s *Service) ListIssues(category string, query IssueListQuery) (IssueList, 
 	}, nil
 }
 
+// readIssue は DD-LOAD-004 の課題JSON読み込みを行う。
+// 目的: 課題JSONを読み込み、検証結果を付与して返す。
+// 入力: path は課題JSONパス、category はカテゴリ名。
+// 出力: IssueDetail とエラー。
+// エラー: 読み込み・パース・スキーマ検証失敗時に返す。
+// 副作用: なし。
+// 並行性: 読み取りのみでスレッドセーフ。
+// 不変条件: Category は入力 category に上書きする。
+// 関連DD: DD-LOAD-004
 func (s *Service) readIssue(path, category string) (IssueDetail, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return IssueDetail{}, fmt.Errorf("read issue: %w", err)
+	// #nosec G304 -- カテゴリ配下の列挙結果から生成したパスのみを読む。
+	data, readErr := os.ReadFile(path)
+	if readErr != nil {
+		return IssueDetail{}, fmt.Errorf("read issue: %w", readErr)
 	}
 
 	var parsed issue.Issue
-	if err := json.Unmarshal(data, &parsed); err != nil {
-		return IssueDetail{}, fmt.Errorf("parse issue: %w", err)
+	if unmarshalErr := json.Unmarshal(data, &parsed); unmarshalErr != nil {
+		return IssueDetail{}, fmt.Errorf("parse issue: %w", unmarshalErr)
 	}
 	parsed.Category = category
 
 	schemaInvalid := false
 	if s.validator != nil {
-		result, err := s.validator.ValidateIssue(data)
-		if err != nil {
-			return IssueDetail{}, fmt.Errorf("validate issue: %w", err)
+		result, validateErr := s.validator.ValidateIssue(data)
+		if validateErr != nil {
+			return IssueDetail{}, fmt.Errorf("validate issue: %w", validateErr)
 		}
 		schemaInvalid = len(result.Issues) > 0 || parsed.Version != 1
 	} else if parsed.Version != 1 {
@@ -353,18 +401,34 @@ func (s *Service) readIssue(path, category string) (IssueDetail, error) {
 }
 
 // writeIssue は DD-PERSIST-002 に従い課題 JSON を保存する。
+// 目的: 検証済み課題をJSONに整形し原子的に保存する。
+// 入力: path は保存先、value は課題モデル。
+// 出力: 成功時は nil、失敗時はエラー。
+// エラー: JSON生成失敗または保存失敗時に返す。
+// 副作用: 課題JSONを書き換える。
+// 並行性: 同一ファイルへの同時書き込みは想定しない。
+// 不変条件: JSONキー順序と整形は jsonfmt に従う。
+// 関連DD: DD-PERSIST-002
 func (s *Service) writeIssue(path string, value issue.Issue) error {
 	data, err := jsonfmt.MarshalIssue(value)
 	if err != nil {
 		return fmt.Errorf("marshal issue: %w", err)
 	}
-	if err := atomicwrite.WriteFile(path, data); err != nil {
-		return fmt.Errorf("write issue: %w", err)
+	if writeErr := atomicwrite.WriteFile(path, data); writeErr != nil {
+		return fmt.Errorf("write issue: %w", writeErr)
 	}
 	return nil
 }
 
 // ensureCategoryDir は DD-LOAD-002 のカテゴリディレクトリ存在を確認する。
+// 目的: 課題作成前にカテゴリの存在と種別を確認する。
+// 入力: category はカテゴリ名。
+// 出力: 成功時は nil、失敗時はエラー。
+// エラー: ディレクトリ不存在や非ディレクトリの場合に返す。
+// 副作用: なし。
+// 並行性: 読み取りのみでスレッドセーフ。
+// 不変条件: 返却時点でカテゴリパスはディレクトリである。
+// 関連DD: DD-LOAD-002
 func (s *Service) ensureCategoryDir(category string) error {
 	path := filepath.Join(s.projectRoot, category)
 	info, err := os.Stat(path)
@@ -372,7 +436,7 @@ func (s *Service) ensureCategoryDir(category string) error {
 		return fmt.Errorf("stat category: %w", err)
 	}
 	if !info.IsDir() {
-		return fmt.Errorf("category is not a directory")
+		return errors.New("category is not a directory")
 	}
 	return nil
 }

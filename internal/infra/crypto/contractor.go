@@ -1,3 +1,5 @@
+// Package crypto は contractor.json の暗号化と検証を担い、UI表示は扱わない。
+// 暗号アルゴリズムの選定は詳細設計に従う。
 package crypto
 
 import (
@@ -23,6 +25,12 @@ const (
 )
 
 const fixedPlaintext = "contractor-mode"
+
+// ErrUnsupportedKDF は未対応のKDF設定を示す。
+var ErrUnsupportedKDF = errors.New("unsupported kdf settings")
+
+// ErrPasswordMismatch はパスワード不一致を示す。
+var ErrPasswordMismatch = errors.New("password mismatch")
 
 // randReader は DD-CLI-005 のランダム生成をテストで固定するための差し替え点。
 var randReader io.Reader = rand.Reader
@@ -72,9 +80,17 @@ func GenerateContractorAuth(password string) (ContractorAuth, error) {
 }
 
 // VerifyPassword は DD-CLI-005 の固定文字列復号でパスワードを検証する。
+// 目的: contractor.json の暗号情報に基づきパスワード一致を判定する。
+// 入力: auth は認証情報、password は平文パスワード。
+// 出力: 一致時は true、未一致時は false とエラー。
+// エラー: 設定不一致や復号失敗時に返す。
+// 副作用: なし。
+// 並行性: スレッドセーフ。
+// 不変条件: 未対応KDFは一致判定を行わない。
+// 関連DD: DD-CLI-005
 func VerifyPassword(auth ContractorAuth, password string) (bool, error) {
 	if auth.KDF != kdfName || auth.KDFIterations != kdfIterations {
-		return false, fmt.Errorf("unsupported kdf settings")
+		return false, ErrUnsupportedKDF
 	}
 
 	salt, err := base64.StdEncoding.DecodeString(auth.SaltB64)
@@ -93,10 +109,13 @@ func VerifyPassword(auth ContractorAuth, password string) (bool, error) {
 	key := deriveKey(password, salt)
 	plaintext, err := decryptFixed(key, nonce, ciphertext)
 	if err != nil {
-		return false, nil
+		return false, ErrPasswordMismatch
 	}
 
-	return string(plaintext) == fixedPlaintext, nil
+	if string(plaintext) != fixedPlaintext {
+		return false, ErrPasswordMismatch
+	}
+	return true, nil
 }
 
 // deriveKey は DD-CLI-005 の PBKDF2-HMAC-SHA256 で鍵を導出する。
@@ -118,6 +137,14 @@ func encryptFixed(key, nonce []byte) ([]byte, error) {
 }
 
 // decryptFixed は DD-CLI-005 の固定平文を AES-256-GCM で復号する。
+// 目的: 暗号文から固定平文を復号する。
+// 入力: key は導出鍵、nonce はノンス、ciphertext は暗号文。
+// 出力: 平文バイト列とエラー。
+// エラー: 復号処理に失敗した場合に返す。
+// 副作用: なし。
+// 並行性: スレッドセーフ。
+// 不変条件: 復号成功時のみ平文を返す。
+// 関連DD: DD-CLI-005
 func decryptFixed(key, nonce, ciphertext []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -129,7 +156,7 @@ func decryptFixed(key, nonce, ciphertext []byte) ([]byte, error) {
 	}
 	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("decrypt gcm: %w", err)
 	}
 	return plaintext, nil
 }
