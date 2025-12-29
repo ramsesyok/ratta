@@ -17,6 +17,8 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.1",
+    "@vue/test-utils": "^2.4.6",
+    "jsdom": "^24.1.3",
     "prettier": "^3.5.2",
     "sass": "^1.85.1",
     "vite": "^5.2.10",

@@ -272,7 +272,7 @@
   - Acceptance
     - All backend call failures are captured into stores/errors
 
-- [ ] TASK-0603 Implement ProjectSelectDialog
+- [x] TASK-0603 Implement ProjectSelectDialog
   - Scope
     - Uses bootstrap to prefill last project root
     - Validate/Open, Create new, Cancel exits
