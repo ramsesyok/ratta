@@ -1,0 +1,104 @@
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+formatters:
+  enable:
+    - gofumpt
+    - goimports
+  exclusions:
+    generated: strict
+
+linters:
+  default: none
+  enable:
+    - bodyclose
+    - copyloopvar
+    - dogsled
+    - dupword
+    - durationcheck
+
+    - errcheck
+    - errchkjson
+    - errorlint
+    - exhaustive
+
+    - gocritic
+    - gocyclo
+
+    - gosec
+    - govet
+
+    - ineffassign
+    - misspell
+    - nakedret
+    - nilerr
+    - noctx
+    - nolintlint
+
+    - perfsprint
+    - prealloc
+    - predeclared
+
+    - rowserrcheck
+    - sqlclosecheck
+
+    - staticcheck
+
+    - thelper
+    - tparallel
+
+    - unconvert
+    - unparam
+    - unused
+
+    - usestdlibvars
+    - whitespace
+    - wrapcheck
+
+  settings:
+    staticcheck:
+      checks:
+        - all
+
+    gosec:
+      severity: low
+      confidence: low
+      config:
+        global:
+          audit: true
+
+    errcheck:
+      check-type-assertions: true
+      check-blank: true
+
+    govet:
+      enable:
+        - shadow
+      settings:
+        shadow:
+          strict: true
+
+    gocyclo:
+      min-complexity: 15
+
+  exclusions:
+    generated: strict
+    warn-unused: true
+    rules:
+      # モックや自動生成コードだけを除外したい場合の例（*_test.go は除外しない）
+      - path: '(^|/)(mock|mocks)/'
+        linters:
+          - gosec
+      - path: '(^|/).*\.gen\.go$'
+        linters:
+          - gosec
+      - path: '(^|/)zz_generated\..+\.go$'
+        linters:
+          - gosec
