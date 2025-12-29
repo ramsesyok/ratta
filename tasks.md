@@ -182,7 +182,7 @@
 
 ## Phase 5: Backend data loading, error registry, and Wails API
 
-- [ ] TASK-0501 Implement project root validation and creation
+- [x] TASK-0501 Implement project root validation and creation
   - Scope
     - ValidateProjectRoot, CreateProjectRoot, SaveLastProjectRoot
   - Tests
@@ -190,7 +190,7 @@
   - Acceptance
     - Normalized path returned when possible
 
-- [ ] TASK-0502 Implement category scanning and read-only category detection
+- [x] TASK-0502 Implement category scanning and read-only category detection
   - Scope
     - Flat scan of <PROJECT_ROOT> directories
     - Exclude .git and dot dirs except .tmp_rename
@@ -200,7 +200,7 @@
   - Acceptance
     - Nested subfolders not treated as categories
 
-- [ ] TASK-0503 Implement issue scanning and classification
+- [x] TASK-0503 Implement issue scanning and classification
   - Scope
     - Load *.json under a category
     - Classify: JSON parse failure vs schema invalid vs valid
@@ -212,7 +212,7 @@
   - Acceptance
     - GetLoadErrors returns the recorded items
 
-- [ ] TASK-0504 Implement issue persistence and core operations
+- [x] TASK-0504 Implement issue persistence and core operations
   - Scope
     - GetIssue (always reload from disk)
     - CreateIssue (origin_company from current mode; comments starts empty)
@@ -223,7 +223,7 @@
   - Acceptance
     - ListIssues result is stable and matches query inputs
 
-- [ ] TASK-0505 Implement comment add with attachments
+- [x] TASK-0505 Implement comment add with attachments
   - Scope
     - AddComment appends to comments array
     - Saves attachments first with staging, then updates JSON
@@ -233,7 +233,7 @@
   - Acceptance
     - Comments displayed oldest-to-newest based on array order
 
-- [ ] TASK-0506 Implement category mutators (Contractor only)
+- [x] TASK-0506 Implement category mutators (Contractor only)
   - Scope
     - CreateCategory (reject duplicates including case-insensitive)
     - DeleteCategory (only if no *.json; treat only .files as empty)
@@ -243,7 +243,7 @@
   - Acceptance
     - Read-only categories block edits and deletes with E_CONFLICT
 
-- [ ] TASK-0507 Implement Wails binding layer and DTO mapping
+- [x] TASK-0507 Implement Wails binding layer and DTO mapping
   - Scope
     - Expose APIs listed in docs/detailed_design.md
     - Standard ResponseDTO (ok/data/error) mapping for frontend
