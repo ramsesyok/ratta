@@ -290,7 +290,7 @@
   - Acceptance
     - Mode becomes Contractor only after successful verification
 
-- [ ] TASK-0605 Implement MainView (categories + issue list)
+- [x] TASK-0605 Implement MainView (categories + issue list)
   - Scope
     - Left: categories list, Contractor-only controls (create/rename/delete)
     - Right: issue list with columns, paging (20), sorting, filtering
