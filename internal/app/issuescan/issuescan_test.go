@@ -33,10 +33,10 @@ func TestScanCategory_ClassifiesIssues(t *testing.T) {
 		t.Fatalf("MarshalIssue error: %v", err)
 	}
 
-	if err := os.WriteFile(filepath.Join(dir, "valid.json"), validData, 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "valid.json"), validData, 0o600); err != nil {
 		t.Fatalf("write valid: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "invalid.json"), []byte("{"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "invalid.json"), []byte("{"), 0o600); err != nil {
 		t.Fatalf("write invalid: %v", err)
 	}
 
@@ -57,7 +57,7 @@ func TestScanCategory_ClassifiesIssues(t *testing.T) {
 	if err != nil {
 		t.Fatalf("MarshalIssue error: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "schema_invalid.json"), invalidSchemaData, 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "schema_invalid.json"), invalidSchemaData, 0o600); err != nil {
 		t.Fatalf("write schema invalid: %v", err)
 	}
 

@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 
 	"ratta/internal/domain/id"
 	"ratta/internal/domain/issue"
@@ -284,9 +283,6 @@ func (s *Service) ListIssues(category string, query IssueListQuery) (IssueList, 
 	var items []IssueSummary
 	for _, entry := range entries {
 		if entry.IsDir() {
-			if strings.HasSuffix(entry.Name(), ".files") {
-				continue
-			}
 			continue
 		}
 		if filepath.Ext(entry.Name()) != ".json" {

@@ -12,16 +12,16 @@ func TestRotateIfNeeded_RotatesAndKeepsGenerations(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "ratta.log")
 
-	if err := os.WriteFile(path, make([]byte, maxSizeBytes+1), 0o644); err != nil {
+	if err := os.WriteFile(path, make([]byte, maxSizeBytes+1), 0o600); err != nil {
 		t.Fatalf("write base log: %v", err)
 	}
-	if err := os.WriteFile(path+".1", []byte("gen1"), 0o644); err != nil {
+	if err := os.WriteFile(path+".1", []byte("gen1"), 0o600); err != nil {
 		t.Fatalf("write gen1: %v", err)
 	}
-	if err := os.WriteFile(path+".2", []byte("gen2"), 0o644); err != nil {
+	if err := os.WriteFile(path+".2", []byte("gen2"), 0o600); err != nil {
 		t.Fatalf("write gen2: %v", err)
 	}
-	if err := os.WriteFile(path+".3", []byte("gen3"), 0o644); err != nil {
+	if err := os.WriteFile(path+".3", []byte("gen3"), 0o600); err != nil {
 		t.Fatalf("write gen3: %v", err)
 	}
 

@@ -26,7 +26,7 @@ func TestWriteFile_Success(t *testing.T) {
 	// DD-PERSIST-002 の手順で正常に置き換えられることを確認する。
 	dir := t.TempDir()
 	targetPath := filepath.Join(dir, "issue.json")
-	if err := os.WriteFile(targetPath, []byte("old"), 0o644); err != nil {
+	if err := os.WriteFile(targetPath, []byte("old"), 0o600); err != nil {
 		t.Fatalf("write original: %v", err)
 	}
 
@@ -56,7 +56,7 @@ func TestWriteFile_RenameFailureCleansTemp(t *testing.T) {
 	// rename 失敗時に元データ保持と一時ファイル削除を行うことを確認する。
 	dir := t.TempDir()
 	targetPath := filepath.Join(dir, "issue.json")
-	if err := os.WriteFile(targetPath, []byte("old"), 0o644); err != nil {
+	if err := os.WriteFile(targetPath, []byte("old"), 0o600); err != nil {
 		t.Fatalf("write original: %v", err)
 	}
 

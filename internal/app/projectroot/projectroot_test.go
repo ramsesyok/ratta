@@ -35,7 +35,7 @@ func TestValidateProjectRoot_NotDirectory(t *testing.T) {
 	// ファイルパスは無効になることを確認する。
 	dir := t.TempDir()
 	path := filepath.Join(dir, "file.txt")
-	if err := os.WriteFile(path, []byte("x"), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte("x"), 0o600); err != nil {
 		t.Fatalf("write file: %v", err)
 	}
 	service := NewService(nil)

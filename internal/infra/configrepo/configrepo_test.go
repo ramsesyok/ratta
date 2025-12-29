@@ -32,7 +32,7 @@ func TestLoad_CorruptReturnsWarning(t *testing.T) {
 	dir := t.TempDir()
 	repo := NewRepository(filepath.Join(dir, "ratta.exe"))
 
-	if err := os.WriteFile(filepath.Join(dir, "config.json"), []byte("{"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "config.json"), []byte("{"), 0o600); err != nil {
 		t.Fatalf("write config: %v", err)
 	}
 

@@ -45,7 +45,7 @@ func TestSaveAll_CollisionAddsSuffix(t *testing.T) {
 	t.Cleanup(func() { newAttachmentID = previousID })
 
 	existing := filepath.Join(attachDir, "ATTACH123_report.txt")
-	if err := os.WriteFile(existing, []byte("old"), 0o644); err != nil {
+	if err := os.WriteFile(existing, []byte("old"), 0o600); err != nil {
 		t.Fatalf("write existing: %v", err)
 	}
 

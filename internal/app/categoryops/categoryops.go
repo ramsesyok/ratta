@@ -173,9 +173,6 @@ func (s *Service) updateIssueCategory(categoryPath, newName string) error {
 	}
 	for _, entry := range entries {
 		if entry.IsDir() {
-			if strings.HasSuffix(entry.Name(), ".files") {
-				continue
-			}
 			continue
 		}
 		if filepath.Ext(entry.Name()) != ".json" {

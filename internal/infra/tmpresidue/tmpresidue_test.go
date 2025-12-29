@@ -12,7 +12,7 @@ func TestScanAndHandle_DeletesRecentTmp(t *testing.T) {
 	// 24時間未満の一時ファイルは削除され、警告が残らないことを確認する。
 	dir := t.TempDir()
 	tmpPath := filepath.Join(dir, "issue.json.tmp.123.456")
-	if err := os.WriteFile(tmpPath, []byte("tmp"), 0o644); err != nil {
+	if err := os.WriteFile(tmpPath, []byte("tmp"), 0o600); err != nil {
 		t.Fatalf("write tmp: %v", err)
 	}
 
@@ -41,7 +41,7 @@ func TestScanAndHandle_ReportsOldTmp(t *testing.T) {
 	// 24時間以上の一時ファイルは削除せず、警告として記録されることを確認する。
 	dir := t.TempDir()
 	tmpPath := filepath.Join(dir, "issue.json.tmp.123.789")
-	if err := os.WriteFile(tmpPath, []byte("tmp"), 0o644); err != nil {
+	if err := os.WriteFile(tmpPath, []byte("tmp"), 0o600); err != nil {
 		t.Fatalf("write tmp: %v", err)
 	}
 
@@ -77,7 +77,7 @@ func TestScanAndHandle_DeleteFailureRecorded(t *testing.T) {
 	// 削除失敗時に E_IO_WRITE が記録されることを確認する。
 	dir := t.TempDir()
 	tmpPath := filepath.Join(dir, "issue.json.tmp.123.999")
-	if err := os.WriteFile(tmpPath, []byte("tmp"), 0o644); err != nil {
+	if err := os.WriteFile(tmpPath, []byte("tmp"), 0o600); err != nil {
 		t.Fatalf("write tmp: %v", err)
 	}
 

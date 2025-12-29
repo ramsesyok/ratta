@@ -65,7 +65,7 @@ func TestRenameCategory_UpdatesIssueCategory(t *testing.T) {
 	if err != nil {
 		t.Fatalf("MarshalIssue error: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(root, oldName, "abc123DEF.json"), data, 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(root, oldName, "abc123DEF.json"), data, 0o600); err != nil {
 		t.Fatalf("write issue: %v", err)
 	}
 

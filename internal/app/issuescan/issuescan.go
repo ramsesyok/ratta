@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"ratta/internal/infra/schema"
 )
@@ -56,9 +55,6 @@ func (s *Scanner) ScanCategory(categoryPath, categoryName string) (ScanResult, e
 	var result ScanResult
 	for _, entry := range entries {
 		if entry.IsDir() {
-			if strings.HasSuffix(entry.Name(), ".files") {
-				continue
-			}
 			continue
 		}
 		if filepath.Ext(entry.Name()) != ".json" {

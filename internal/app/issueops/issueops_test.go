@@ -73,7 +73,7 @@ func TestUpdateIssue_RejectsEndState(t *testing.T) {
 	if err != nil {
 		t.Fatalf("MarshalIssue error: %v", err)
 	}
-	if err := os.WriteFile(path, data, 0o644); err != nil {
+	if err := os.WriteFile(path, data, 0o600); err != nil {
 		t.Fatalf("write issue: %v", err)
 	}
 
@@ -102,7 +102,7 @@ func TestUpdateIssue_RejectsSchemaInvalid(t *testing.T) {
 		t.Fatalf("mkdir category: %v", err)
 	}
 	path := filepath.Join(root, category, "issue.json")
-	if err := os.WriteFile(path, []byte(`{"issue_id":"abc123DEF"}`), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(`{"issue_id":"abc123DEF"}`), 0o600); err != nil {
 		t.Fatalf("write issue: %v", err)
 	}
 
@@ -149,7 +149,7 @@ func TestListIssues_SortAndPage(t *testing.T) {
 		if err != nil {
 			t.Fatalf("MarshalIssue error: %v", err)
 		}
-		if err := os.WriteFile(filepath.Join(root, category, filename), data, 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(root, category, filename), data, 0o600); err != nil {
 			t.Fatalf("write issue: %v", err)
 		}
 	}
@@ -213,7 +213,7 @@ func TestAddComment_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("MarshalIssue error: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(root, category, issueID+".json"), data, 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(root, category, issueID+".json"), data, 0o600); err != nil {
 		t.Fatalf("write issue: %v", err)
 	}
 
@@ -274,7 +274,7 @@ func TestAddComment_RollbackOnWriteFailure(t *testing.T) {
 	if err != nil {
 		t.Fatalf("MarshalIssue error: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(root, category, issueID+".json"), data, 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(root, category, issueID+".json"), data, 0o600); err != nil {
 		t.Fatalf("write issue: %v", err)
 	}
 

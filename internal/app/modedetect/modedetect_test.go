@@ -36,7 +36,7 @@ func TestDetectMode_WithAuthFile(t *testing.T) {
 	if err := os.MkdirAll(filepath.Dir(authPath), 0o755); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
-	if err := os.WriteFile(authPath, []byte("{}"), 0o644); err != nil {
+	if err := os.WriteFile(authPath, []byte("{}"), 0o600); err != nil {
 		t.Fatalf("write auth: %v", err)
 	}
 
@@ -72,7 +72,7 @@ func TestVerifyContractorPassword_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("MarshalContractor error: %v", err)
 	}
-	if err := os.WriteFile(authPath, data, 0o644); err != nil {
+	if err := os.WriteFile(authPath, data, 0o600); err != nil {
 		t.Fatalf("write auth: %v", err)
 	}
 
@@ -109,7 +109,7 @@ func TestVerifyContractorPassword_WrongPassword(t *testing.T) {
 	if err != nil {
 		t.Fatalf("MarshalContractor error: %v", err)
 	}
-	if err := os.WriteFile(authPath, data, 0o644); err != nil {
+	if err := os.WriteFile(authPath, data, 0o600); err != nil {
 		t.Fatalf("write auth: %v", err)
 	}
 

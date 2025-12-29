@@ -36,7 +36,7 @@ func TestRun_CreatesAuthFile(t *testing.T) {
 	}
 	marshalAuth = func(any) ([]byte, error) { return []byte("{\"ok\":true}\n"), nil }
 	writeFile = func(path string, data []byte) error {
-		return os.WriteFile(path, data, 0o644)
+		return os.WriteFile(path, data, 0o600)
 	}
 	t.Cleanup(func() {
 		generateAuth = previousGenerate
@@ -62,7 +62,7 @@ func TestRun_RejectsOverwriteWithoutForce(t *testing.T) {
 	if err := os.MkdirAll(filepath.Dir(authPath), 0o755); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
-	if err := os.WriteFile(authPath, []byte("existing"), 0o644); err != nil {
+	if err := os.WriteFile(authPath, []byte("existing"), 0o600); err != nil {
 		t.Fatalf("write existing: %v", err)
 	}
 
@@ -80,7 +80,7 @@ func TestRun_AllowsOverwriteWithForce(t *testing.T) {
 	if err := os.MkdirAll(filepath.Dir(authPath), 0o755); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
-	if err := os.WriteFile(authPath, []byte("existing"), 0o644); err != nil {
+	if err := os.WriteFile(authPath, []byte("existing"), 0o600); err != nil {
 		t.Fatalf("write existing: %v", err)
 	}
 
@@ -92,7 +92,7 @@ func TestRun_AllowsOverwriteWithForce(t *testing.T) {
 	}
 	marshalAuth = func(any) ([]byte, error) { return []byte("{\"ok\":true}\n"), nil }
 	writeFile = func(path string, data []byte) error {
-		return os.WriteFile(path, data, 0o644)
+		return os.WriteFile(path, data, 0o600)
 	}
 	t.Cleanup(func() {
 		generateAuth = previousGenerate
