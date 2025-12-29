@@ -263,7 +263,7 @@
   - Acceptance
     - Errors flow into stores/errors consistently
 
-- [ ] TASK-0602 Implement Pinia stores skeleton
+- [x] TASK-0602 Implement Pinia stores skeleton
   - Scope
     - stores/app, stores/categories, stores/issues, stores/issueDetail, stores/errors
     - Implement actions per docs/detailed_design.md, including selectCategory calling loadIssues
