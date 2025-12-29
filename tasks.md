@@ -281,7 +281,7 @@
   - Acceptance
     - Selecting a project root persists last_project_root_path
 
-- [ ] TASK-0604 Implement ContractorPasswordDialog
+- [x] TASK-0604 Implement ContractorPasswordDialog
   - Scope
     - Shown when auth/contractor.json exists
     - On failure shows message then exits flow
