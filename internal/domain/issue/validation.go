@@ -1,0 +1,184 @@
+package issue
+
+import (
+	"fmt"
+	"strings"
+	"time"
+	"unicode/utf8"
+)
+
+const (
+	maxNameLength       = 255
+	maxCommentBodyBytes = 100 * 1024
+	maxAttachments      = 5
+)
+
+// ValidationError は DD-DATA-003/004 の入力不整合を表す。
+type ValidationError struct {
+	Field   string
+	Message string
+}
+
+func (e ValidationError) Error() string {
+	return fmt.Sprintf("%s: %s", e.Field, e.Message)
+}
+
+// ValidationErrors は DD-DATA-003/004 の複数エラーをまとめる。
+type ValidationErrors []ValidationError
+
+func (e ValidationErrors) Error() string {
+	if len(e) == 0 {
+		return ""
+	}
+	var parts []string
+	for _, item := range e {
+		parts = append(parts, item.Error())
+	}
+	return strings.Join(parts, ", ")
+}
+
+// ValidateCategoryName は DD-DATA-003 のカテゴリ名ルールを検証する。
+func ValidateCategoryName(name string) ValidationErrors {
+	var errs ValidationErrors
+	if name == "" {
+		errs = append(errs, ValidationError{Field: "category", Message: "required"})
+		return errs
+	}
+	if utf8.RuneCountInString(name) > maxNameLength {
+		errs = append(errs, ValidationError{Field: "category", Message: "too long"})
+	}
+	if hasInvalidCategoryChar(name) {
+		errs = append(errs, ValidationError{Field: "category", Message: "contains invalid characters"})
+	}
+	if hasTrailingDotOrSpace(name) {
+		errs = append(errs, ValidationError{Field: "category", Message: "trailing dot or space"})
+	}
+	return errs
+}
+
+// ValidateIssue は DD-DATA-003/004 の必須項目・形式を検証する。
+func ValidateIssue(issue Issue) ValidationErrors {
+	var errs ValidationErrors
+
+	if issue.IssueID == "" {
+		errs = append(errs, ValidationError{Field: "issue_id", Message: "required"})
+	}
+	errs = append(errs, ValidateCategoryName(issue.Category)...)
+	if err := validateRequiredLength("title", issue.Title, maxNameLength); err != nil {
+		errs = append(errs, *err)
+	}
+	if err := validateRequiredLength("description", issue.Description, maxNameLength); err != nil {
+		errs = append(errs, *err)
+	}
+	if !issue.Status.IsValid() {
+		errs = append(errs, ValidationError{Field: "status", Message: "invalid"})
+	}
+	if !issue.Priority.IsValid() {
+		errs = append(errs, ValidationError{Field: "priority", Message: "invalid"})
+	}
+	if !issue.OriginCompany.IsValid() {
+		errs = append(errs, ValidationError{Field: "origin_company", Message: "invalid"})
+	}
+	if issue.CreatedAt == "" {
+		errs = append(errs, ValidationError{Field: "created_at", Message: "required"})
+	}
+	if issue.UpdatedAt == "" {
+		errs = append(errs, ValidationError{Field: "updated_at", Message: "required"})
+	}
+	if issue.DueDate == "" {
+		errs = append(errs, ValidationError{Field: "due_date", Message: "required"})
+	} else if !isValidDate(issue.DueDate) {
+		errs = append(errs, ValidationError{Field: "due_date", Message: "invalid format"})
+	}
+	if issue.Comments == nil {
+		errs = append(errs, ValidationError{Field: "comments", Message: "required"})
+	} else {
+		for i, comment := range issue.Comments {
+			errs = append(errs, prefixErrors(fmt.Sprintf("comments[%d].", i), ValidateComment(comment))...)
+		}
+	}
+
+	return errs
+}
+
+// ValidateComment は DD-DATA-004 のコメント必須項目を検証する。
+func ValidateComment(comment Comment) ValidationErrors {
+	var errs ValidationErrors
+	if comment.CommentID == "" {
+		errs = append(errs, ValidationError{Field: "comment_id", Message: "required"})
+	}
+	if comment.Body == "" {
+		errs = append(errs, ValidationError{Field: "body", Message: "required"})
+	} else if len([]byte(comment.Body)) > maxCommentBodyBytes {
+		errs = append(errs, ValidationError{Field: "body", Message: "too large"})
+	}
+	if err := validateRequiredLength("author_name", comment.AuthorName, maxNameLength); err != nil {
+		errs = append(errs, *err)
+	}
+	if !comment.AuthorCompany.IsValid() {
+		errs = append(errs, ValidationError{Field: "author_company", Message: "invalid"})
+	}
+	if comment.CreatedAt == "" {
+		errs = append(errs, ValidationError{Field: "created_at", Message: "required"})
+	}
+	if len(comment.Attachments) > maxAttachments {
+		errs = append(errs, ValidationError{Field: "attachments", Message: "too many"})
+	}
+	return errs
+}
+
+// validateRequiredLength は DD-DATA-003/004 の必須・長さ制約を検証する。
+func validateRequiredLength(field, value string, max int) *ValidationError {
+	if value == "" {
+		return &ValidationError{Field: field, Message: "required"}
+	}
+	if utf8.RuneCountInString(value) > max {
+		return &ValidationError{Field: field, Message: "too long"}
+	}
+	return nil
+}
+
+// prefixErrors は DD-DATA-003/004 の配列項目エラーにプレフィックスを付ける。
+func prefixErrors(prefix string, errs ValidationErrors) ValidationErrors {
+	if len(errs) == 0 {
+		return nil
+	}
+	var prefixed ValidationErrors
+	for _, err := range errs {
+		prefixed = append(prefixed, ValidationError{
+			Field:   prefix + err.Field,
+			Message: err.Message,
+		})
+	}
+	return prefixed
+}
+
+// isValidDate は DD-DATA-002 の日付フォーマットを検証する。
+func isValidDate(value string) bool {
+	_, err := time.Parse("2006-01-02", value)
+	return err == nil
+}
+
+// hasInvalidCategoryChar は DD-DATA-003 の禁止文字を検出する。
+func hasInvalidCategoryChar(value string) bool {
+	for _, r := range value {
+		if r < 0x20 {
+			return true
+		}
+		switch r {
+		case '\\', '/', ':', '*', '?', '"', '<', '>', '|':
+			return true
+		default:
+		}
+	}
+	return false
+}
+
+// hasTrailingDotOrSpace は DD-DATA-003 の末尾記号ルールを検証する。
+func hasTrailingDotOrSpace(value string) bool {
+	if value == "" {
+		return false
+	}
+	last := value[len(value)-1]
+	return last == '.' || last == ' '
+}

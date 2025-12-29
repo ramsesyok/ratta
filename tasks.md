@@ -158,7 +158,7 @@
 
 ## Phase 4: Backend domain and use-cases
 
-- [ ] TASK-0401 Implement domain types and validation
+- [x] TASK-0401 Implement domain types and validation
   - Scope
     - Status tokens and end-state rules
     - Priority tokens
