@@ -1,3 +1,5 @@
+// app.go は Wails のアプリケーション層ブリッジを担い、UI からの操作をユースケースに接続する。
+// UI 表示やドメイン詳細はここで扱わない。
 package main
 
 import (
@@ -30,8 +32,19 @@ type App struct {
 }
 
 // NewApp は DD-BE-002 の初期化を行う。
+// 目的: Wails 起動時に必要な状態を初期化する。
+// 入力: なし。
+// 出力: 初期化済み App。
+// エラー: 返却値で表現しない。実行ファイルパス取得失敗時は空文字を保持する。
+// 副作用: なし。
+// 並行性: 呼び出し側が単一スレッドで実行する前提。
+// 不変条件: mode は Vendor を初期値とする。
+// 関連DD: DD-BE-002
 func NewApp() *App {
-	exePath, _ := os.Executable()
+	exePath, exeErr := os.Executable()
+	if exeErr != nil {
+		exePath = ""
+	}
 	validator := loadValidator(exePath)
 	return &App{
 		exePath:    exePath,
@@ -47,6 +60,14 @@ func (a *App) startup(ctx context.Context) {
 }
 
 // GetAppBootstrap は DD-BE-003 の起動時情報を返す。
+// 目的: UI 初期表示に必要な設定値と状態を返す。
+// 入力: なし。
+// 出力: BootstrapDTO を含む Response。
+// エラー: 設定読み込みに失敗した場合はデフォルト設定で続行する。
+// 副作用: 設定リポジトリから読み取りを行う。
+// 並行性: App はスレッドセーフではないため同時呼び出しは想定しない。
+// 不変条件: 返却する DTO は nil の代わりに空値を使う。
+// 関連DD: DD-BE-003
 func (a *App) GetAppBootstrap() present.Response {
 	cfg, hasConfig, err := a.configRepo.Load()
 	if err != nil {
@@ -62,7 +83,7 @@ func (a *App) GetAppBootstrap() present.Response {
 
 	hasAuth := false
 	if a.exePath != "" {
-		if _, err := os.Stat(filepath.Join(filepath.Dir(a.exePath), "auth", "contractor.json")); err == nil {
+		if _, statErr := os.Stat(filepath.Join(filepath.Dir(a.exePath), "auth", "contractor.json")); statErr == nil {
 			hasAuth = true
 		}
 	}

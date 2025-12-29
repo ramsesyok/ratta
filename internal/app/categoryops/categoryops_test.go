@@ -1,3 +1,4 @@
+// categoryops_test.go はカテゴリ操作ユースケースのテストを行い、UI の統合動作は扱わない。
 package categoryops
 
 import (
@@ -14,11 +15,11 @@ import (
 func TestCreateCategory_DuplicateCaseInsensitive(t *testing.T) {
 	// 大小文字違いを含む重複名が拒否されることを確認する。
 	root := t.TempDir()
-	if err := os.MkdirAll(filepath.Join(root, "Cat"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, "Cat"), 0o750); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
 	service := NewService(root)
-	if _, err := service.CreateCategory("cat", mod.ModeContractor); err == nil {
+	if _, createErr := service.CreateCategory("cat", mod.ModeContractor); createErr == nil {
 		t.Fatal("expected duplicate error")
 	}
 }
@@ -27,15 +28,15 @@ func TestDeleteCategory_EmptyWithFilesOnly(t *testing.T) {
 	// *.json が無く .files のみの場合は削除できることを確認する。
 	root := t.TempDir()
 	category := "cat"
-	if err := os.MkdirAll(filepath.Join(root, category, "issue.files"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, category, "issue.files"), 0o750); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
 	service := NewService(root)
 	if err := service.DeleteCategory(category, mod.ModeContractor); err != nil {
 		t.Fatalf("DeleteCategory error: %v", err)
 	}
-	if _, err := os.Stat(filepath.Join(root, category)); !os.IsNotExist(err) {
-		t.Fatalf("expected category to be deleted, err=%v", err)
+	if _, statErr := os.Stat(filepath.Join(root, category)); !os.IsNotExist(statErr) {
+		t.Fatalf("expected category to be deleted, err=%v", statErr)
 	}
 }
 
@@ -44,7 +45,7 @@ func TestRenameCategory_UpdatesIssueCategory(t *testing.T) {
 	root := t.TempDir()
 	oldName := "old"
 	newName := "new"
-	if err := os.MkdirAll(filepath.Join(root, oldName), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, oldName), 0o750); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
 	item := issue.Issue{
@@ -70,17 +71,18 @@ func TestRenameCategory_UpdatesIssueCategory(t *testing.T) {
 	}
 
 	service := NewService(root)
-	if _, err := service.RenameCategory(oldName, newName, mod.ModeContractor); err != nil {
-		t.Fatalf("RenameCategory error: %v", err)
+	if _, renameErr := service.RenameCategory(oldName, newName, mod.ModeContractor); renameErr != nil {
+		t.Fatalf("RenameCategory error: %v", renameErr)
 	}
 
-	updatedData, err := os.ReadFile(filepath.Join(root, newName, "abc123DEF.json"))
-	if err != nil {
-		t.Fatalf("read updated issue: %v", err)
+	// #nosec G304 -- テスト用一時ディレクトリ配下の固定ファイルを読むため安全。
+	updatedData, readErr := os.ReadFile(filepath.Join(root, newName, "abc123DEF.json"))
+	if readErr != nil {
+		t.Fatalf("read updated issue: %v", readErr)
 	}
 	var parsed issue.Issue
-	if err := json.Unmarshal(updatedData, &parsed); err != nil {
-		t.Fatalf("parse updated issue: %v", err)
+	if unmarshalErr := json.Unmarshal(updatedData, &parsed); unmarshalErr != nil {
+		t.Fatalf("parse updated issue: %v", unmarshalErr)
 	}
 	if parsed.Category != newName {
 		t.Fatalf("expected updated category: %s", parsed.Category)

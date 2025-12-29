@@ -1,3 +1,5 @@
+// Package issue は課題ドメインの検証と型定義を提供し、永続化は扱わない。
+// 検証ルールは詳細設計に従う。
 package issue
 
 import (
@@ -26,11 +28,20 @@ func (e ValidationError) Error() string {
 // ValidationErrors は DD-DATA-003/004 の複数エラーをまとめる。
 type ValidationErrors []ValidationError
 
+// Error は DD-DATA-003/004 の検証エラーを連結して返す。
+// 目的: 複数エラーを単一の文字列にまとめる。
+// 入力: e は検証エラー群。
+// 出力: エラーメッセージ文字列。
+// エラー: なし。
+// 副作用: なし。
+// 並行性: スレッドセーフ。
+// 不変条件: 各エラーは ", " で連結する。
+// 関連DD: DD-DATA-003, DD-DATA-004
 func (e ValidationErrors) Error() string {
 	if len(e) == 0 {
 		return ""
 	}
-	var parts []string
+	parts := make([]string, 0, len(e))
 	for _, item := range e {
 		parts = append(parts, item.Error())
 	}
@@ -128,22 +139,38 @@ func ValidateComment(comment Comment) ValidationErrors {
 }
 
 // validateRequiredLength は DD-DATA-003/004 の必須・長さ制約を検証する。
-func validateRequiredLength(field, value string, max int) *ValidationError {
+// 目的: 必須項目と最大長の制約を検証する。
+// 入力: field は対象フィールド名、value は値、maxLen は最大文字数。
+// 出力: エラーがあれば ValidationError、なければ nil。
+// エラー: なし。
+// 副作用: なし。
+// 並行性: スレッドセーフ。
+// 不変条件: 空文字は required エラーとなる。
+// 関連DD: DD-DATA-003, DD-DATA-004
+func validateRequiredLength(field, value string, maxLen int) *ValidationError {
 	if value == "" {
 		return &ValidationError{Field: field, Message: "required"}
 	}
-	if utf8.RuneCountInString(value) > max {
+	if utf8.RuneCountInString(value) > maxLen {
 		return &ValidationError{Field: field, Message: "too long"}
 	}
 	return nil
 }
 
 // prefixErrors は DD-DATA-003/004 の配列項目エラーにプレフィックスを付ける。
+// 目的: 配列要素のエラーにインデックス接頭辞を付与する。
+// 入力: prefix は付与する接頭辞、errs は元エラー。
+// 出力: 接頭辞付きの ValidationErrors。
+// エラー: なし。
+// 副作用: なし。
+// 並行性: スレッドセーフ。
+// 不変条件: errs が空の場合は nil を返す。
+// 関連DD: DD-DATA-003, DD-DATA-004
 func prefixErrors(prefix string, errs ValidationErrors) ValidationErrors {
 	if len(errs) == 0 {
 		return nil
 	}
-	var prefixed ValidationErrors
+	prefixed := make(ValidationErrors, 0, len(errs))
 	for _, err := range errs {
 		prefixed = append(prefixed, ValidationError{
 			Field:   prefix + err.Field,

@@ -1,3 +1,5 @@
+// Package issuescan はカテゴリ配下の課題走査を担い、編集操作は扱わない。
+// スキーマ検証の詳細実装は infra 層に委ねる。
 package issuescan
 
 import (
@@ -46,6 +48,14 @@ func NewScanner(validator *schema.Validator) *Scanner {
 }
 
 // ScanCategory は DD-LOAD-003/004 のルールでカテゴリ配下を走査する。
+// 目的: カテゴリ配下の課題JSONを読み込み一覧項目を収集する。
+// 入力: categoryPath はカテゴリパス、categoryName はカテゴリ名。
+// 出力: ScanResult とエラー。
+// エラー: カテゴリディレクトリの読み取り失敗時に返す。
+// 副作用: なし。
+// 並行性: 読み取りのみでスレッドセーフ。
+// 不変条件: スキーマ不整合の課題は LoadErrors ではなく IsSchemaInvalid で表現する。
+// 関連DD: DD-LOAD-003, DD-LOAD-004
 func (s *Scanner) ScanCategory(categoryPath, categoryName string) (ScanResult, error) {
 	entries, err := os.ReadDir(categoryPath)
 	if err != nil {
@@ -61,11 +71,11 @@ func (s *Scanner) ScanCategory(categoryPath, categoryName string) (ScanResult, e
 			continue
 		}
 		path := filepath.Join(categoryPath, entry.Name())
-		item, err := s.readIssue(path, categoryName)
-		if err != nil {
+		item, readErr := s.readIssue(path, categoryName)
+		if readErr != nil {
 			result.LoadErrors = append(result.LoadErrors, LoadError{
 				Path:    path,
-				Message: err.Error(),
+				Message: readErr.Error(),
 			})
 			continue
 		}
@@ -77,21 +87,31 @@ func (s *Scanner) ScanCategory(categoryPath, categoryName string) (ScanResult, e
 	return result, nil
 }
 
+// readIssue は DD-LOAD-004 の課題JSONを読み込み一覧向け情報を抽出する。
+// 目的: JSONを解析しスキーマ検証結果を付与して返す。
+// 入力: path は課題JSONのパス、categoryName はカテゴリ名。
+// 出力: IssueSummary とエラー。
+// エラー: 読み取り・JSON解析・検証失敗時に返す。
+// 副作用: なし。
+// 並行性: 読み取りのみでスレッドセーフ。
+// 不変条件: スキーマ不整合時は schemaInvalid を true にする。
+// 関連DD: DD-LOAD-004
 func (s *Scanner) readIssue(path, categoryName string) (*IssueSummary, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("read issue: %w", err)
+	// #nosec G304 -- カテゴリ配下の列挙結果から生成したパスのみを読む。
+	data, readErr := os.ReadFile(path)
+	if readErr != nil {
+		return nil, fmt.Errorf("read issue: %w", readErr)
 	}
 
 	var raw map[string]any
-	if err := json.Unmarshal(data, &raw); err != nil {
-		return nil, fmt.Errorf("parse json: %w", err)
+	if unmarshalErr := json.Unmarshal(data, &raw); unmarshalErr != nil {
+		return nil, fmt.Errorf("parse json: %w", unmarshalErr)
 	}
 
 	if s.validator != nil {
-		result, err := s.validator.ValidateIssue(data)
-		if err != nil {
-			return nil, fmt.Errorf("validate issue: %w", err)
+		result, validateErr := s.validator.ValidateIssue(data)
+		if validateErr != nil {
+			return nil, fmt.Errorf("validate issue: %w", validateErr)
 		}
 		if len(result.Issues) > 0 {
 			return buildSummary(raw, categoryName, path, true), nil

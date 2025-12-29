@@ -1,3 +1,4 @@
+// issueops_test.go は課題操作ユースケースのテストを行い、UI統合は扱わない。
 package issueops
 
 import (
@@ -18,7 +19,7 @@ func TestCreateIssue_SetsDefaults(t *testing.T) {
 	// 作成時に origin_company と status が設定され、comments が空であることを確認する。
 	root := t.TempDir()
 	category := "cat"
-	if err := os.MkdirAll(filepath.Join(root, category), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, category), 0o750); err != nil {
 		t.Fatalf("mkdir category: %v", err)
 	}
 	validator, err := schema.NewValidatorFromDir(filepath.Join("..", "..", "..", "schemas"))
@@ -51,7 +52,7 @@ func TestUpdateIssue_RejectsEndState(t *testing.T) {
 	// Closed/Rejected の課題は更新できないことを確認する。
 	root := t.TempDir()
 	category := "cat"
-	if err := os.MkdirAll(filepath.Join(root, category), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, category), 0o750); err != nil {
 		t.Fatalf("mkdir category: %v", err)
 	}
 	path := filepath.Join(root, category, "issue.json")
@@ -83,13 +84,13 @@ func TestUpdateIssue_RejectsEndState(t *testing.T) {
 	}
 	service := NewService(root, validator)
 
-	if _, err := service.UpdateIssue(category, "issue", mod.ModeContractor, IssueUpdateInput{
+	if _, updateErr := service.UpdateIssue(category, "issue", mod.ModeContractor, IssueUpdateInput{
 		Title:       "new",
 		Description: "new",
 		DueDate:     "2024-01-03",
 		Priority:    issue.PriorityLow,
 		Status:      issue.StatusOpen,
-	}); err == nil {
+	}); updateErr == nil {
 		t.Fatal("expected end-state update to fail")
 	}
 }
@@ -98,7 +99,7 @@ func TestUpdateIssue_RejectsSchemaInvalid(t *testing.T) {
 	// スキーマ不整合の課題は更新できないことを確認する。
 	root := t.TempDir()
 	category := "cat"
-	if err := os.MkdirAll(filepath.Join(root, category), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, category), 0o750); err != nil {
 		t.Fatalf("mkdir category: %v", err)
 	}
 	path := filepath.Join(root, category, "issue.json")
@@ -112,13 +113,13 @@ func TestUpdateIssue_RejectsSchemaInvalid(t *testing.T) {
 	}
 	service := NewService(root, validator)
 
-	if _, err := service.UpdateIssue(category, "issue", mod.ModeContractor, IssueUpdateInput{
+	if _, updateErr := service.UpdateIssue(category, "issue", mod.ModeContractor, IssueUpdateInput{
 		Title:       "new",
 		Description: "new",
 		DueDate:     "2024-01-03",
 		Priority:    issue.PriorityLow,
 		Status:      issue.StatusOpen,
-	}); err == nil {
+	}); updateErr == nil {
 		t.Fatal("expected schema invalid update to fail")
 	}
 }
@@ -127,7 +128,7 @@ func TestListIssues_SortAndPage(t *testing.T) {
 	// ソートとページングの結果が安定していることを確認する。
 	root := t.TempDir()
 	category := "cat"
-	if err := os.MkdirAll(filepath.Join(root, category), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, category), 0o750); err != nil {
 		t.Fatalf("mkdir category: %v", err)
 	}
 	writeIssue := func(filename, title, updatedAt string) {
@@ -149,8 +150,8 @@ func TestListIssues_SortAndPage(t *testing.T) {
 		if err != nil {
 			t.Fatalf("MarshalIssue error: %v", err)
 		}
-		if err := os.WriteFile(filepath.Join(root, category, filename), data, 0o600); err != nil {
-			t.Fatalf("write issue: %v", err)
+		if writeErr := os.WriteFile(filepath.Join(root, category, filename), data, 0o600); writeErr != nil {
+			t.Fatalf("write issue: %v", writeErr)
 		}
 	}
 
@@ -191,7 +192,7 @@ func TestAddComment_Success(t *testing.T) {
 	// コメント追加で添付と本文が保存されることを確認する。
 	root := t.TempDir()
 	category := "cat"
-	if err := os.MkdirAll(filepath.Join(root, category), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, category), 0o750); err != nil {
 		t.Fatalf("mkdir category: %v", err)
 	}
 	issueID := "abc123DEF"
@@ -243,8 +244,8 @@ func TestAddComment_Success(t *testing.T) {
 	if len(comment.Attachments) != 1 {
 		t.Fatalf("expected 1 attachment, got %d", len(comment.Attachments))
 	}
-	if _, err := os.Stat(filepath.Join(root, category, issueID+".files", comment.Attachments[0].StoredName)); err != nil {
-		t.Fatalf("expected attachment file, err=%v", err)
+	if _, statErr := os.Stat(filepath.Join(root, category, issueID+".files", comment.Attachments[0].StoredName)); statErr != nil {
+		t.Fatalf("expected attachment file, err=%v", statErr)
 	}
 }
 
@@ -252,7 +253,7 @@ func TestAddComment_RollbackOnWriteFailure(t *testing.T) {
 	// JSON 更新失敗時に添付がロールバックされることを確認する。
 	root := t.TempDir()
 	category := "cat"
-	if err := os.MkdirAll(filepath.Join(root, category), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, category), 0o750); err != nil {
 		t.Fatalf("mkdir category: %v", err)
 	}
 	issueID := "abc123DEF"
@@ -309,13 +310,13 @@ func TestAddComment_RollbackOnWriteFailure(t *testing.T) {
 		writeIssueFunc = previousWrite
 	})
 
-	if _, err := service.AddComment(category, issueID, mod.ModeVendor, CommentCreateInput{
+	if _, addErr := service.AddComment(category, issueID, mod.ModeVendor, CommentCreateInput{
 		Body:       "hello",
 		AuthorName: "author",
 		Attachments: []CommentAttachmentInput{
 			{OriginalName: "file.txt", Data: []byte("data")},
 		},
-	}); err == nil {
+	}); addErr == nil {
 		t.Fatal("expected add comment failure")
 	}
 	if !rolledBack {

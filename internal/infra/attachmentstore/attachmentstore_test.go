@@ -1,7 +1,9 @@
+// attachmentstore_test.go は添付保存のテストを行い、UI統合は扱わない。
 package attachmentstore
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -17,8 +19,20 @@ func (w *failingWriter) Write(_ []byte) (int, error) {
 	return 0, errors.New("write failed")
 }
 
+// Close は Close の失敗をテストで観測できるようにラップする。
+// 目的: クローズエラーを明示的に返す。
+// 入力: なし。
+// 出力: Close 実行結果のエラー。
+// エラー: os.File の Close が失敗した場合に返す。
+// 副作用: ファイルディスクリプタを閉じる。
+// 並行性: 単一ゴルーチンでの利用を前提とする。
+// 不変条件: 返却するエラーは Close の失敗を示す。
+// 関連DD: DD-DATA-005
 func (w *failingWriter) Close() error {
-	return w.file.Close()
+	if err := w.file.Close(); err != nil {
+		return fmt.Errorf("close temp file: %w", err)
+	}
+	return nil
 }
 
 func TestSanitizeFileName_ReplacesInvalidAndTrailing(t *testing.T) {
@@ -36,7 +50,7 @@ func TestSaveAll_CollisionAddsSuffix(t *testing.T) {
 	dir := t.TempDir()
 	issueID := "abcdefghi"
 	attachDir := filepath.Join(dir, issueID+attachmentDirExt)
-	if err := os.MkdirAll(attachDir, 0o755); err != nil {
+	if err := os.MkdirAll(attachDir, 0o750); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
 
@@ -53,7 +67,11 @@ func TestSaveAll_CollisionAddsSuffix(t *testing.T) {
 	if err != nil {
 		t.Fatalf("SaveAll error: %v", err)
 	}
-	t.Cleanup(func() { _ = rollback() })
+	t.Cleanup(func() {
+		if cleanupErr := rollback(); cleanupErr != nil {
+			t.Errorf("rollback error: %v", cleanupErr)
+		}
+	})
 
 	if len(records) != 1 {
 		t.Fatalf("unexpected records: %+v", records)
@@ -61,8 +79,8 @@ func TestSaveAll_CollisionAddsSuffix(t *testing.T) {
 	if records[0].StoredName != "ATTACH123_report_1.txt" {
 		t.Fatalf("unexpected stored name: %s", records[0].StoredName)
 	}
-	if _, err := os.Stat(records[0].FullPath); err != nil {
-		t.Fatalf("expected saved file, err=%v", err)
+	if _, statErr := os.Stat(records[0].FullPath); statErr != nil {
+		t.Fatalf("expected saved file, err=%v", statErr)
 	}
 }
 
@@ -87,9 +105,10 @@ func TestSaveAll_RollbackOnFailure(t *testing.T) {
 	createTempFile = func(dir, base string) (io.WriteCloser, string, error) {
 		callCount++
 		tmpPath := filepath.Join(dir, base+".tmp.1.1")
-		file, err := os.OpenFile(tmpPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
+		// #nosec G304 -- テスト用ディレクトリ配下の一時ファイルのみを作成する。
+		file, err := os.OpenFile(tmpPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
 		if err != nil {
-			return nil, "", err
+			return nil, "", fmt.Errorf("open temp file: %w", err)
 		}
 		if callCount == 2 {
 			return &failingWriter{file: file}, tmpPath, nil
@@ -111,7 +130,7 @@ func TestSaveAll_RollbackOnFailure(t *testing.T) {
 	}
 
 	firstPath := filepath.Join(dir, issueID+attachmentDirExt, "ATTACHAAA_a.txt")
-	if _, err := os.Stat(firstPath); !os.IsNotExist(err) {
-		t.Fatalf("expected rollback to delete first file, err=%v", err)
+	if _, statErr := os.Stat(firstPath); !os.IsNotExist(statErr) {
+		t.Fatalf("expected rollback to delete first file, err=%v", statErr)
 	}
 }

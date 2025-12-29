@@ -1,3 +1,4 @@
+// error_test.go はエラー変換のテストを行い、UI統合は扱わない。
 package present
 
 import (

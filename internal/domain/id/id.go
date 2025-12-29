@@ -1,3 +1,5 @@
+// Package id は各種ID生成を担い、IDの利用方法や保存先は扱わない。
+// 乱数の供給元は差し替え可能とする。
 package id
 
 import (
@@ -12,8 +14,10 @@ const (
 	nanoIDLength = 9
 )
 
-var uuidV7Generator = uuid.NewV7
-var nanoidGenerate = gonanoid.Generate
+var (
+	uuidV7Generator = uuid.NewV7
+	nanoidGenerate  = gonanoid.Generate
+)
 
 // NewIssueID は DD-DATA-003 の issue_id 仕様に従い nanoid (9 文字) を生成する。
 func NewIssueID() (string, error) {

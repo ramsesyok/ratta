@@ -1,3 +1,5 @@
+// Package tmpresidue は一時ファイル残骸の検出と削除を担い、UI表示は扱わない。
+// 具体的な通知は上位層に委ねる。
 package tmpresidue
 
 import (
@@ -14,9 +16,11 @@ const (
 
 const staleThreshold = 24 * time.Hour
 
-var now = time.Now
-var removeFile = os.Remove
-var walkDir = filepath.WalkDir
+var (
+	now        = time.Now
+	removeFile = os.Remove
+	walkDir    = filepath.WalkDir
+)
 
 // ScanResult は DD-PERSIST-004 の一時ファイル残骸検出結果を表す。
 type ScanResult struct {
@@ -27,6 +31,14 @@ type ScanResult struct {
 }
 
 // ScanAndHandle は DD-PERSIST-004 に従い *.tmp.* を検出し、削除または警告を記録する。
+// 目的: 一時ファイル残骸を削除し、削除できない場合は警告結果を返す。
+// 入力: root は走査対象のルートパス。
+// 出力: ScanResult の配列とエラー。
+// エラー: 走査中のI/Oエラーが発生した場合に返す。
+// 副作用: 条件に応じて一時ファイルを削除する。
+// 並行性: 同時削除は想定しない。
+// 不変条件: 24時間未満は削除、24時間超過は警告として返す。
+// 関連DD: DD-PERSIST-004
 func ScanAndHandle(root string) ([]ScanResult, error) {
 	var results []ScanResult
 
@@ -44,14 +56,14 @@ func ScanAndHandle(root string) ([]ScanResult, error) {
 			return nil
 		}
 
-		info, err := entry.Info()
-		if err != nil {
-			return err
+		info, infoErr := entry.Info()
+		if infoErr != nil {
+			return infoErr
 		}
 
 		age := now().Sub(info.ModTime())
 		if age < staleThreshold {
-			if err := removeFile(path); err != nil {
+			if removeErr := removeFile(path); removeErr != nil {
 				results = append(results, ScanResult{
 					ErrorCode: ErrCodeIOWrite,
 					Message:   "一時ファイルの削除に失敗しました。",

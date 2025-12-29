@@ -1,3 +1,4 @@
+// Package timeutil は時刻表現の共通処理を提供し、永続化I/Oは扱わない。
 package timeutil
 
 import "time"

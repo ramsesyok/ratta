@@ -1,3 +1,4 @@
+// contractorinit_test.go は contractor.json 作成処理のテストを行い、UI統合は扱わない。
 package contractorinit
 
 import (
@@ -59,7 +60,7 @@ func TestRun_RejectsOverwriteWithoutForce(t *testing.T) {
 	dir := t.TempDir()
 	exePath := filepath.Join(dir, "ratta.exe")
 	authPath := filepath.Join(dir, "auth", "contractor.json")
-	if err := os.MkdirAll(filepath.Dir(authPath), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(authPath), 0o750); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
 	if err := os.WriteFile(authPath, []byte("existing"), 0o600); err != nil {
@@ -77,7 +78,7 @@ func TestRun_AllowsOverwriteWithForce(t *testing.T) {
 	dir := t.TempDir()
 	exePath := filepath.Join(dir, "ratta.exe")
 	authPath := filepath.Join(dir, "auth", "contractor.json")
-	if err := os.MkdirAll(filepath.Dir(authPath), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(authPath), 0o750); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
 	if err := os.WriteFile(authPath, []byte("existing"), 0o600); err != nil {
@@ -105,9 +106,10 @@ func TestRun_AllowsOverwriteWithForce(t *testing.T) {
 		t.Fatalf("Run error: %v", err)
 	}
 
-	data, err := os.ReadFile(authPath)
-	if err != nil {
-		t.Fatalf("read contractor.json: %v", err)
+	// #nosec G304 -- テスト用ディレクトリ配下の固定パスを読むため安全。
+	data, readErr := os.ReadFile(authPath)
+	if readErr != nil {
+		t.Fatalf("read contractor.json: %v", readErr)
 	}
 	if string(data) != "{\"ok\":true}\n" {
 		t.Fatalf("unexpected content: %s", string(data))

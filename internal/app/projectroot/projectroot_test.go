@@ -1,3 +1,4 @@
+// projectroot_test.go はプロジェクトルート操作のテストを行い、UI統合は扱わない。
 package projectroot
 
 import (
@@ -76,8 +77,8 @@ func TestCreateProjectRoot_NewDirectory(t *testing.T) {
 	if !result.IsValid {
 		t.Fatal("expected valid result")
 	}
-	if _, err := os.Stat(path); err != nil {
-		t.Fatalf("expected directory to exist, err=%v", err)
+	if _, statErr := os.Stat(path); statErr != nil {
+		t.Fatalf("expected directory to exist, err=%v", statErr)
 	}
 }
 

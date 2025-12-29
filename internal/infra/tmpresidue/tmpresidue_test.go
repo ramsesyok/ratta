@@ -1,3 +1,4 @@
+// tmpresidue_test.go は一時ファイル残骸処理のテストを行い、UI統合は扱わない。
 package tmpresidue
 
 import (
@@ -32,8 +33,8 @@ func TestScanAndHandle_DeletesRecentTmp(t *testing.T) {
 	if len(results) != 0 {
 		t.Fatalf("unexpected results: %+v", results)
 	}
-	if _, err := os.Stat(tmpPath); !os.IsNotExist(err) {
-		t.Fatalf("expected temp file to be deleted, err=%v", err)
+	if _, statErr := os.Stat(tmpPath); !os.IsNotExist(statErr) {
+		t.Fatalf("expected temp file to be deleted, err=%v", statErr)
 	}
 }
 
@@ -68,8 +69,8 @@ func TestScanAndHandle_ReportsOldTmp(t *testing.T) {
 		t.Fatal("expected hint to be set")
 	}
 
-	if _, err := os.Stat(tmpPath); err != nil {
-		t.Fatalf("expected temp file to remain, err=%v", err)
+	if _, statErr := os.Stat(tmpPath); statErr != nil {
+		t.Fatalf("expected temp file to remain, err=%v", statErr)
 	}
 }
 
@@ -107,7 +108,7 @@ func TestScanAndHandle_DeleteFailureRecorded(t *testing.T) {
 	if results[0].Target != tmpPath {
 		t.Fatalf("unexpected target: %s", results[0].Target)
 	}
-	if _, err := os.Stat(tmpPath); err != nil {
-		t.Fatalf("expected temp file to remain, err=%v", err)
+	if _, statErr := os.Stat(tmpPath); statErr != nil {
+		t.Fatalf("expected temp file to remain, err=%v", statErr)
 	}
 }

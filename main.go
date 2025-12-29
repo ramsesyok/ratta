@@ -1,3 +1,4 @@
+// main.go はアプリ起動とCLI初期化を担い、UI詳細は扱わない。
 package main
 
 import (
@@ -15,6 +16,15 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 
+// main は Wails アプリとCLIモードの起動を行う。
+// 目的: CLI 初期化とGUI起動を切り替える。
+// 入力: コマンドライン引数。
+// 出力: なし。
+// エラー: CLI 処理の失敗時は終了コードで示す。
+// 副作用: プロセス終了やアプリ起動を行う。
+// 並行性: 単一ゴルーチンで実行する。
+// 不変条件: CLI が処理された場合は GUI を起動しない。
+// 関連DD: DD-BE-002, DD-CLI-002
 func main() {
 	if handled, code := runCLI(); handled {
 		os.Exit(code)
@@ -37,12 +47,20 @@ func main() {
 			app,
 		},
 	})
-
 	if err != nil {
 		println("Error:", err.Error())
 	}
 }
 
+// runCLI は CLI モードの初期化コマンドを処理する。
+// 目的: init contractor を検出し認証ファイル生成を実行する。
+// 入力: os.Args の内容。
+// 出力: handled は CLI を処理したか、code は終了コード。
+// エラー: 失敗時は handled=true と code=1 を返す。
+// 副作用: contractor.json 生成やプロセス終了コードに影響する。
+// 並行性: 単一ゴルーチンで実行する。
+// 不変条件: 対象外の引数は handled=false を返す。
+// 関連DD: DD-CLI-002, DD-CLI-003, DD-CLI-004
 func runCLI() (bool, int) {
 	if len(os.Args) < 2 {
 		return false, 0
@@ -61,7 +79,7 @@ func runCLI() (bool, int) {
 	if err != nil {
 		return true, 1
 	}
-	if err := contractorinit.Run(exePath, *force, contractorinit.ConsolePrompter{}); err != nil {
+	if runErr := contractorinit.Run(exePath, *force, contractorinit.ConsolePrompter{}); runErr != nil {
 		return true, 1
 	}
 	return true, 0
