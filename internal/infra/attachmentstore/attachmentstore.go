@@ -8,12 +8,11 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"ratta/internal/domain/id"
 	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
-
-	"ratta/internal/domain/id"
 )
 
 const (
@@ -78,7 +77,7 @@ func SaveAll(issueDir, issueID string, inputs []Input) ([]SavedAttachment, func(
 		record, err := saveOne(attachDir, issueID, input)
 		if err != nil {
 			if cleanupErr := removeAll(saved); cleanupErr != nil {
-				return nil, nil, fmt.Errorf("cleanup attachments: %v: %w", cleanupErr, err)
+				return nil, nil, fmt.Errorf("cleanup attachments failed: %w; cleanup error: %s", err, cleanupErr.Error())
 			}
 			return nil, nil, err
 		}
@@ -142,10 +141,10 @@ func writeWithTemp(dir, base string, data []byte) error {
 		closeErr := writer.Close()
 		removeErr := removeFile(tmpPath)
 		if closeErr != nil {
-			return fmt.Errorf("write temp file: %v; close error: %w", writeErr, closeErr)
+			return fmt.Errorf("write temp file failed: %w; close error: %s", writeErr, closeErr.Error())
 		}
 		if removeErr != nil {
-			return fmt.Errorf("write temp file: %v; cleanup error: %w", writeErr, removeErr)
+			return fmt.Errorf("write temp file failed: %w; cleanup error: %s", writeErr, removeErr.Error())
 		}
 		return fmt.Errorf("write temp file: %w", writeErr)
 	}
@@ -153,7 +152,7 @@ func writeWithTemp(dir, base string, data []byte) error {
 	if closeErr := writer.Close(); closeErr != nil {
 		removeErr := removeFile(tmpPath)
 		if removeErr != nil {
-			return fmt.Errorf("close temp file: %v; cleanup error: %w", closeErr, removeErr)
+			return fmt.Errorf("close temp file failed: %w; cleanup error: %s", closeErr, removeErr.Error())
 		}
 		return fmt.Errorf("close temp file: %w", closeErr)
 	}
@@ -161,7 +160,7 @@ func writeWithTemp(dir, base string, data []byte) error {
 	if renameErr := renameFile(tmpPath, filepath.Join(dir, base)); renameErr != nil {
 		removeErr := removeFile(tmpPath)
 		if removeErr != nil {
-			return fmt.Errorf("rename temp file: %v; cleanup error: %w", renameErr, removeErr)
+			return fmt.Errorf("rename temp file failed: %w; cleanup error: %s", renameErr, removeErr.Error())
 		}
 		return fmt.Errorf("rename temp file: %w", renameErr)
 	}

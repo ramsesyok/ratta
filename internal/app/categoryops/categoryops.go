@@ -8,12 +8,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
-
 	"ratta/internal/domain/issue"
-	mod "ratta/internal/domain/mode"
 	"ratta/internal/infra/atomicwrite"
 	"ratta/internal/infra/jsonfmt"
+	"strings"
+
+	mod "ratta/internal/domain/mode"
 )
 
 // Category は DD-LOAD-002 のカテゴリ情報を表す。
@@ -139,7 +139,7 @@ func (s *Service) RenameCategory(oldName, newName string, currentMode mod.Mode) 
 
 	if err := s.updateIssueCategory(tmpPath, newName); err != nil {
 		if renameErr := os.Rename(tmpPath, oldPath); renameErr != nil {
-			return Category{}, fmt.Errorf("rollback rename: %v: %w", renameErr, err)
+			return Category{}, fmt.Errorf("rollback rename failed: %w; rollback error: %s", err, renameErr.Error())
 		}
 		return Category{}, err
 	}
@@ -226,9 +226,9 @@ func (s *Service) updateIssueCategory(categoryPath, newName string) error {
 			return fmt.Errorf("parse issue: %w", unmarshalErr)
 		}
 		parsed.Category = newName
-		updated, err := jsonfmt.MarshalIssue(parsed)
-		if err != nil {
-			return fmt.Errorf("marshal issue: %w", err)
+		updated, marshalErr := jsonfmt.MarshalIssue(parsed)
+		if marshalErr != nil {
+			return fmt.Errorf("marshal issue: %w", marshalErr)
 		}
 		if writeErr := atomicwrite.WriteFile(path, updated); writeErr != nil {
 			return fmt.Errorf("write issue: %w", writeErr)

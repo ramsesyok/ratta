@@ -1,4 +1,4 @@
-// schema.go はスキーマ読み込みと参照制御を担い、検証結果の整形は扱わない。
+// Package schema はスキーマ読み込みと参照制御を担い、検証結果の整形は扱わない。
 package schema
 
 import (

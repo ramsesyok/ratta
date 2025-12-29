@@ -3,6 +3,7 @@
 package tmpresidue
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -58,7 +59,7 @@ func ScanAndHandle(root string) ([]ScanResult, error) {
 
 		info, infoErr := entry.Info()
 		if infoErr != nil {
-			return infoErr
+			return fmt.Errorf("stat temp file: %w", infoErr)
 		}
 
 		age := now().Sub(info.ModTime())

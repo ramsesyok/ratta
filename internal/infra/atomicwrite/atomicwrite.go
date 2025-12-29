@@ -23,6 +23,7 @@ var createTempFile tempFileCreator = func(dir, base string) (io.WriteCloser, str
 	timestamp := now().Unix()
 	tmpName := fmt.Sprintf("%s.tmp.%d.%d", base, os.Getpid(), timestamp)
 	tmpPath := filepath.Join(dir, tmpName)
+	// #nosec G304 -- 生成済みの一時ファイル名のみを利用するため安全。
 	file, err := os.OpenFile(tmpPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
 	if err != nil {
 		return nil, "", fmt.Errorf("open temp file: %w", err)
@@ -52,10 +53,10 @@ func WriteFile(targetPath string, data []byte) error {
 		closeErr := writer.Close()
 		removeErr := removeFile(tmpPath)
 		if closeErr != nil {
-			return fmt.Errorf("write temp file: %v; close error: %w", writeErr, closeErr)
+			return fmt.Errorf("write temp file failed: %w; close error: %s", writeErr, closeErr.Error())
 		}
 		if removeErr != nil {
-			return fmt.Errorf("write temp file: %v; cleanup error: %w", writeErr, removeErr)
+			return fmt.Errorf("write temp file failed: %w; cleanup error: %s", writeErr, removeErr.Error())
 		}
 		return fmt.Errorf("write temp file: %w", writeErr)
 	}
@@ -63,7 +64,7 @@ func WriteFile(targetPath string, data []byte) error {
 	if closeErr := writer.Close(); closeErr != nil {
 		removeErr := removeFile(tmpPath)
 		if removeErr != nil {
-			return fmt.Errorf("close temp file: %v; cleanup error: %w", closeErr, removeErr)
+			return fmt.Errorf("close temp file failed: %w; cleanup error: %s", closeErr, removeErr.Error())
 		}
 		return fmt.Errorf("close temp file: %w", closeErr)
 	}
@@ -71,7 +72,7 @@ func WriteFile(targetPath string, data []byte) error {
 	if renameErr := renameFile(tmpPath, targetPath); renameErr != nil {
 		removeErr := removeFile(tmpPath)
 		if removeErr != nil {
-			return fmt.Errorf("rename temp file: %v; cleanup error: %w", renameErr, removeErr)
+			return fmt.Errorf("rename temp file failed: %w; cleanup error: %s", renameErr, removeErr.Error())
 		}
 		return fmt.Errorf("rename temp file: %w", renameErr)
 	}

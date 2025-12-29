@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-
 	"ratta/internal/infra/atomicwrite"
 	"ratta/internal/infra/jsonfmt"
 )
@@ -97,8 +96,8 @@ func (r *Repository) Save(cfg Config) error {
 		return fmt.Errorf("marshal config: %w", err)
 	}
 
-	if err := writeFile(r.path, data); err != nil {
-		return fmt.Errorf("write config: %w", err)
+	if writeErr := writeFile(r.path, data); writeErr != nil {
+		return fmt.Errorf("write config: %w", writeErr)
 	}
 	return nil
 }

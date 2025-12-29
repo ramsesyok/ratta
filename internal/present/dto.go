@@ -1,4 +1,4 @@
-// dto.go はフロントエンド公開用のDTO定義を担い、変換ロジックは別ファイルで扱う。
+// Package present はフロントエンド公開用のDTO定義を担い、変換ロジックは別ファイルで扱う。
 package present
 
 // Response は DD-BE-003 の標準レスポンス形式を表す。

@@ -4,10 +4,9 @@ package issuescan
 import (
 	"os"
 	"path/filepath"
-	"testing"
-
 	"ratta/internal/infra/jsonfmt"
 	"ratta/internal/infra/schema"
+	"testing"
 )
 
 func TestScanCategory_ClassifiesIssues(t *testing.T) {

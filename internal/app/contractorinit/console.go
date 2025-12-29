@@ -1,4 +1,4 @@
-// console.go は CLI の入力実装を担い、認証ファイル生成の制御は扱わない。
+// Package contractorinit は CLI の入力実装を担い、認証ファイル生成の制御は扱わない。
 package contractorinit
 
 import (

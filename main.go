@@ -5,7 +5,6 @@ import (
 	"embed"
 	"flag"
 	"os"
-
 	"ratta/internal/app/contractorinit"
 
 	"github.com/wailsapp/wails/v2"

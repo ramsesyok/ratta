@@ -5,12 +5,11 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
-	"testing"
-
 	"ratta/internal/domain/mode"
 	"ratta/internal/infra/crypto"
 	"ratta/internal/infra/jsonfmt"
 	"ratta/internal/infra/schema"
+	"testing"
 )
 
 func TestDetectMode_NoAuthFile(t *testing.T) {
@@ -73,8 +72,8 @@ func TestVerifyContractorPassword_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("MarshalContractor error: %v", err)
 	}
-	if err := os.WriteFile(authPath, data, 0o600); err != nil {
-		t.Fatalf("write auth: %v", err)
+	if writeErr := os.WriteFile(authPath, data, 0o600); writeErr != nil {
+		t.Fatalf("write auth: %v", writeErr)
 	}
 
 	validator, err := schema.NewValidatorFromDir(filepath.Join("..", "..", "..", "schemas"))
@@ -110,8 +109,8 @@ func TestVerifyContractorPassword_WrongPassword(t *testing.T) {
 	if err != nil {
 		t.Fatalf("MarshalContractor error: %v", err)
 	}
-	if err := os.WriteFile(authPath, data, 0o600); err != nil {
-		t.Fatalf("write auth: %v", err)
+	if writeErr := os.WriteFile(authPath, data, 0o600); writeErr != nil {
+		t.Fatalf("write auth: %v", writeErr)
 	}
 
 	service := NewService(filepath.Join(dir, "ratta.exe"), nil)

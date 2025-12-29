@@ -8,16 +8,16 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
-
 	"ratta/internal/domain/id"
 	"ratta/internal/domain/issue"
-	mod "ratta/internal/domain/mode"
 	"ratta/internal/domain/timeutil"
 	"ratta/internal/infra/atomicwrite"
 	"ratta/internal/infra/attachmentstore"
 	"ratta/internal/infra/jsonfmt"
 	"ratta/internal/infra/schema"
+	"sort"
+
+	mod "ratta/internal/domain/mode"
 )
 
 // IssueDetail は DD-LOAD-004/DD-DATA-003 の課題詳細を表す。
@@ -284,7 +284,7 @@ func (s *Service) AddComment(category, issueID string, currentMode mod.Mode, inp
 	if errs := issue.ValidateIssue(updated); len(errs) > 0 {
 		if rollback != nil {
 			if rollbackErr := rollback(); rollbackErr != nil {
-				return IssueDetail{}, fmt.Errorf("rollback attachments: %v: %w", rollbackErr, errs)
+				return IssueDetail{}, fmt.Errorf("rollback attachments failed: %w; rollback error: %s", errs, rollbackErr.Error())
 			}
 		}
 		return IssueDetail{}, errs
@@ -293,7 +293,7 @@ func (s *Service) AddComment(category, issueID string, currentMode mod.Mode, inp
 	if writeErr := writeIssueFunc(s, path, updated); writeErr != nil {
 		if rollback != nil {
 			if rollbackErr := rollback(); rollbackErr != nil {
-				return IssueDetail{}, fmt.Errorf("rollback attachments: %v: %w", rollbackErr, writeErr)
+				return IssueDetail{}, fmt.Errorf("rollback attachments failed: %w; rollback error: %s", writeErr, rollbackErr.Error())
 			}
 		}
 		return IssueDetail{}, writeErr

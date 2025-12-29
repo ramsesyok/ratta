@@ -7,17 +7,17 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-
 	"ratta/internal/app/categoryops"
 	"ratta/internal/app/categoryscan"
 	"ratta/internal/app/issueops"
 	"ratta/internal/app/modedetect"
 	"ratta/internal/app/projectroot"
 	"ratta/internal/domain/issue"
-	mod "ratta/internal/domain/mode"
 	"ratta/internal/infra/configrepo"
 	"ratta/internal/infra/schema"
 	"ratta/internal/present"
+
+	mod "ratta/internal/domain/mode"
 )
 
 // App は DD-BE-002 の Wails バインド対象を表す。

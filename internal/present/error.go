@@ -4,9 +4,8 @@ package present
 
 import (
 	"errors"
-	"strings"
-
 	"ratta/internal/domain/issue"
+	"strings"
 )
 
 const (

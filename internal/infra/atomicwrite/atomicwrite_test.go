@@ -114,6 +114,7 @@ func TestWriteFile_WriteFailureCleansTemp(t *testing.T) {
 	previousCreate := createTempFile
 	createTempFile = func(dir, base string) (io.WriteCloser, string, error) {
 		tmpPath := filepath.Join(dir, base+".tmp."+itoa(os.Getpid())+".1700000002")
+		// #nosec G304 -- テスト用ディレクトリ配下の一時ファイルのみを作成する。
 		file, err := os.OpenFile(tmpPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
 		if err != nil {
 			return nil, "", fmt.Errorf("open temp file: %w", err)

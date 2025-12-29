@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-
 	"ratta/internal/infra/atomicwrite"
 	"ratta/internal/infra/crypto"
 	"ratta/internal/infra/jsonfmt"
@@ -64,8 +63,8 @@ func Run(exePath string, force bool, prompter Prompter) error {
 		return errors.New("contractor.json already exists")
 	}
 
-	if err := mkdirAll(authDir, 0o750); err != nil {
-		return fmt.Errorf("create auth dir: %w", err)
+	if mkdirErr := mkdirAll(authDir, 0o750); mkdirErr != nil {
+		return fmt.Errorf("create auth dir: %w", mkdirErr)
 	}
 
 	auth, err := generateAuth(password)
@@ -76,8 +75,8 @@ func Run(exePath string, force bool, prompter Prompter) error {
 	if err != nil {
 		return fmt.Errorf("marshal contractor auth: %w", err)
 	}
-	if err := writeFile(targetPath, data); err != nil {
-		return fmt.Errorf("write contractor auth: %w", err)
+	if writeErr := writeFile(targetPath, data); writeErr != nil {
+		return fmt.Errorf("write contractor auth: %w", writeErr)
 	}
 	return nil
 }

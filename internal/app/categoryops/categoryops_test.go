@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"ratta/internal/domain/issue"
+	"ratta/internal/infra/jsonfmt"
 	"testing"
 
-	"ratta/internal/domain/issue"
 	mod "ratta/internal/domain/mode"
-	"ratta/internal/infra/jsonfmt"
 )
 
 func TestCreateCategory_DuplicateCaseInsensitive(t *testing.T) {
@@ -66,8 +66,8 @@ func TestRenameCategory_UpdatesIssueCategory(t *testing.T) {
 	if err != nil {
 		t.Fatalf("MarshalIssue error: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(root, oldName, "abc123DEF.json"), data, 0o600); err != nil {
-		t.Fatalf("write issue: %v", err)
+	if writeErr := os.WriteFile(filepath.Join(root, oldName, "abc123DEF.json"), data, 0o600); writeErr != nil {
+		t.Fatalf("write issue: %v", writeErr)
 	}
 
 	service := NewService(root)

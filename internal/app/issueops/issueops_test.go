@@ -5,14 +5,14 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"strings"
-	"testing"
-
 	"ratta/internal/domain/issue"
-	mod "ratta/internal/domain/mode"
 	"ratta/internal/infra/attachmentstore"
 	"ratta/internal/infra/jsonfmt"
 	"ratta/internal/infra/schema"
+	"strings"
+	"testing"
+
+	mod "ratta/internal/domain/mode"
 )
 
 func TestCreateIssue_SetsDefaults(t *testing.T) {
@@ -74,8 +74,8 @@ func TestUpdateIssue_RejectsEndState(t *testing.T) {
 	if err != nil {
 		t.Fatalf("MarshalIssue error: %v", err)
 	}
-	if err := os.WriteFile(path, data, 0o600); err != nil {
-		t.Fatalf("write issue: %v", err)
+	if writeErr := os.WriteFile(path, data, 0o600); writeErr != nil {
+		t.Fatalf("write issue: %v", writeErr)
 	}
 
 	validator, err := schema.NewValidatorFromDir(filepath.Join("..", "..", "..", "schemas"))
@@ -214,8 +214,8 @@ func TestAddComment_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("MarshalIssue error: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(root, category, issueID+".json"), data, 0o600); err != nil {
-		t.Fatalf("write issue: %v", err)
+	if writeErr := os.WriteFile(filepath.Join(root, category, issueID+".json"), data, 0o600); writeErr != nil {
+		t.Fatalf("write issue: %v", writeErr)
 	}
 
 	validator, err := schema.NewValidatorFromDir(filepath.Join("..", "..", "..", "schemas"))
@@ -275,8 +275,8 @@ func TestAddComment_RollbackOnWriteFailure(t *testing.T) {
 	if err != nil {
 		t.Fatalf("MarshalIssue error: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(root, category, issueID+".json"), data, 0o600); err != nil {
-		t.Fatalf("write issue: %v", err)
+	if writeErr := os.WriteFile(filepath.Join(root, category, issueID+".json"), data, 0o600); writeErr != nil {
+		t.Fatalf("write issue: %v", writeErr)
 	}
 
 	validator, err := schema.NewValidatorFromDir(filepath.Join("..", "..", "..", "schemas"))

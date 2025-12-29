@@ -107,7 +107,9 @@ func (l *Logger) write(level Level, message string, fields map[string]any) {
 		return
 	}
 	if _, writeErr := file.Write(line); writeErr != nil {
-		_ = file.Close()
+		if closeErr := file.Close(); closeErr != nil {
+			return
+		}
 		return
 	}
 	if closeErr := file.Close(); closeErr != nil {
@@ -147,7 +149,10 @@ func levelString(level Level) string {
 // 不変条件: 成功時に dir は存在する。
 // 関連DD: DD-BE-002, BD-FILES-003
 func ensureDir(dir string) error {
-	return os.MkdirAll(dir, 0o750)
+	if err := os.MkdirAll(dir, 0o750); err != nil {
+		return fmt.Errorf("create log dir: %w", err)
+	}
+	return nil
 }
 
 // rotateIfNeeded は BD-FILES-003 のローテーション仕様に従う。
@@ -188,7 +193,7 @@ func rotateIfNeeded(path string) error {
 			}
 		}
 	}
-	if renameErr := os.Rename(path, fmt.Sprintf("%s.1", path)); renameErr != nil {
+	if renameErr := os.Rename(path, path+".1"); renameErr != nil {
 		return fmt.Errorf("rename log: %w", renameErr)
 	}
 

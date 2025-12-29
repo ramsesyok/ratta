@@ -5,9 +5,8 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"testing"
-
 	"ratta/internal/infra/crypto"
+	"testing"
 )
 
 type stubPrompter struct {
