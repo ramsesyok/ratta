@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
+
 	"ratta/internal/domain/id"
 	"ratta/internal/domain/issue"
 	"ratta/internal/domain/timeutil"
@@ -15,7 +17,6 @@ import (
 	"ratta/internal/infra/attachmentstore"
 	"ratta/internal/infra/jsonfmt"
 	"ratta/internal/infra/schema"
-	"sort"
 
 	mod "ratta/internal/domain/mode"
 )

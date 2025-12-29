@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
 	"ratta/internal/infra/atomicwrite"
 	"ratta/internal/infra/jsonfmt"
 )

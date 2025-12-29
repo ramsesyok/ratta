@@ -8,10 +8,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
+
 	"ratta/internal/domain/issue"
 	"ratta/internal/infra/atomicwrite"
 	"ratta/internal/infra/jsonfmt"
-	"strings"
 
 	mod "ratta/internal/domain/mode"
 )

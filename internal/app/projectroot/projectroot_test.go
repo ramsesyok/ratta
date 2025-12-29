@@ -65,6 +65,18 @@ func TestValidateProjectRoot_Valid(t *testing.T) {
 	}
 }
 
+func TestValidateProjectRoot_EmptyPath(t *testing.T) {
+	// 空パスは無効として扱われることを確認する。
+	service := NewService(nil)
+	result, err := service.ValidateProjectRoot("")
+	if err != nil {
+		t.Fatalf("ValidateProjectRoot error: %v", err)
+	}
+	if result.IsValid {
+		t.Fatal("expected invalid result for empty path")
+	}
+}
+
 func TestCreateProjectRoot_NewDirectory(t *testing.T) {
 	// 存在しないパスは作成されることを確認する。
 	dir := t.TempDir()
@@ -79,6 +91,18 @@ func TestCreateProjectRoot_NewDirectory(t *testing.T) {
 	}
 	if _, statErr := os.Stat(path); statErr != nil {
 		t.Fatalf("expected directory to exist, err=%v", statErr)
+	}
+}
+
+func TestCreateProjectRoot_EmptyPath(t *testing.T) {
+	// 空パスの作成が拒否されることを確認する。
+	service := NewService(nil)
+	result, err := service.CreateProjectRoot("")
+	if err != nil {
+		t.Fatalf("CreateProjectRoot error: %v", err)
+	}
+	if result.IsValid {
+		t.Fatal("expected invalid result for empty path")
 	}
 }
 

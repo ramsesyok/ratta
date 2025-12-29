@@ -3,3 +3,5 @@ build/windows
 node_modules
 frontend/dist
 .cache
+coverage.out
+coverage.html

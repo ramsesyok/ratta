@@ -48,3 +48,11 @@ func TestLoadSchemasFromDir_RejectsHTTPRefs(t *testing.T) {
 		t.Fatal("expected external ref to be rejected")
 	}
 }
+
+func TestOpenSchemaFile_RejectsOutside(t *testing.T) {
+	// baseDir 外の参照が拒否されることを確認する。
+	dir := t.TempDir()
+	if _, err := openSchemaFile(dir, filepath.Join("..", "outside.json")); err == nil {
+		t.Fatal("expected outside ref error")
+	}
+}

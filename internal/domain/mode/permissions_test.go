@@ -1,8 +1,9 @@
 package mode
 
 import (
-	"ratta/internal/domain/issue"
 	"testing"
+
+	"ratta/internal/domain/issue"
 )
 
 func TestCanTransitionStatus_ContractorAllowsAllOpenMoves(t *testing.T) {
