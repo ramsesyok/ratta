@@ -8,6 +8,7 @@ require (
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
 	github.com/wailsapp/wails/v2 v2.11.0
 	golang.org/x/crypto v0.33.0
+	golang.org/x/term v0.29.0
 )
 
 require (

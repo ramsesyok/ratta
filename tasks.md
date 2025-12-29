@@ -146,7 +146,7 @@
   - Acceptance
     - Failure maps to E_CRYPTO with useful hint
 
-- [ ] TASK-0302 Implement CLI: ratta.exe init contractor
+- [x] TASK-0302 Implement CLI: ratta.exe init contractor
   - Scope
     - Console password input (hidden), confirmation required
     - --force to overwrite existing auth/contractor.json
