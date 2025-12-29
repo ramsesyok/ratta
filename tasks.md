@@ -254,7 +254,7 @@
 
 ## Phase 6: Frontend stores and UI
 
-- [ ] TASK-0601 Implement Wails API client wrappers
+- [x] TASK-0601 Implement Wails API client wrappers
   - Scope
     - Typed wrappers around generated Wails bindings
     - Normalize ResponseDTO and throw or return consistent results to stores
@@ -263,7 +263,7 @@
   - Acceptance
     - Errors flow into stores/errors consistently
 
-- [ ] TASK-0602 Implement Pinia stores skeleton
+- [x] TASK-0602 Implement Pinia stores skeleton
   - Scope
     - stores/app, stores/categories, stores/issues, stores/issueDetail, stores/errors
     - Implement actions per docs/detailed_design.md, including selectCategory calling loadIssues
@@ -272,7 +272,7 @@
   - Acceptance
     - All backend call failures are captured into stores/errors
 
-- [ ] TASK-0603 Implement ProjectSelectDialog
+- [x] TASK-0603 Implement ProjectSelectDialog
   - Scope
     - Uses bootstrap to prefill last project root
     - Validate/Open, Create new, Cancel exits
@@ -281,7 +281,7 @@
   - Acceptance
     - Selecting a project root persists last_project_root_path
 
-- [ ] TASK-0604 Implement ContractorPasswordDialog
+- [x] TASK-0604 Implement ContractorPasswordDialog
   - Scope
     - Shown when auth/contractor.json exists
     - On failure shows message then exits flow
@@ -290,7 +290,7 @@
   - Acceptance
     - Mode becomes Contractor only after successful verification
 
-- [ ] TASK-0605 Implement MainView (categories + issue list)
+- [x] TASK-0605 Implement MainView (categories + issue list)
   - Scope
     - Left: categories list, Contractor-only controls (create/rename/delete)
     - Right: issue list with columns, paging (20), sorting, filtering
@@ -301,7 +301,7 @@
   - Acceptance
     - Selecting a category loads and displays issues
 
-- [ ] TASK-0606 Implement IssueDetailDialog
+- [x] TASK-0606 Implement IssueDetailDialog
   - Scope
     - View mode by default; edit mode after explicit action
     - UpdateIssue flow with required field validation
@@ -313,7 +313,7 @@
   - Acceptance
     - Detail reloads from disk on open/reload
 
-- [ ] TASK-0607 Implement ErrorDetailDialog
+- [x] TASK-0607 Implement ErrorDetailDialog
   - Scope
     - Displays aggregated errors from stores/errors
     - Supports scope filtering (all/category)

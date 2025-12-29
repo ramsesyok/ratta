@@ -9,5 +9,14 @@ export default defineConfig({
       template: { transformAssetUrls }
     }),
     vuetify({ autoImport: true })
-  ]
+  ],
+  test: {
+    environment: 'jsdom',
+    server: {
+      deps: {
+        inline: ['vuetify']
+      }
+    },
+    setupFiles: ['src/__tests__/setup.js']
+  }
 })
