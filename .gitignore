@@ -1,7 +1,9 @@
 build/darwin
 build/windows
+build/bin
 node_modules
 frontend/dist
 .cache
 coverage.out
 coverage.html
+
