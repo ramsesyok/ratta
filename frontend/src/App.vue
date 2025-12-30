@@ -23,77 +23,52 @@ const showContractorDialog = ref(false)
 const showIssueDetailDialog = ref(false)
 const showErrorDetailDialog = ref(false)
 
+const drawer = ref(true)
+const showCreateDialog = ref(false)
+const showRenameDialog = ref(false)
+const showDeleteDialog = ref(false)
+const newCategoryName = ref('')
+const renameCategoryName = ref('')
+const targetCategoryName = ref('')
+
 const showProjectSelect = computed(() => !appStore.projectRoot)
 const needsContractorAuth = computed(() => appStore.contractorAuthRequired && appStore.mode !== 'Contractor')
 const isReady = computed(() => !showProjectSelect.value && !needsContractorAuth.value)
 
 const unreadErrors = computed(() => errorsStore.items.filter((item) => !item.is_read).length)
+const selectedCategory = computed(() => categoriesStore.selectedCategory)
 
 // onMounted は起動時の初期データを読み込む。
-// 目的: 前回のプロジェクトルートと設定を反映する。
-// 入力: なし。
-// 出力: なし。
-// エラー: 取得失敗時は errors ストアへ登録される。
-// 副作用: バックエンド呼び出しを行う。
-// 並行性: 単一UIイベント前提。
-// 不変条件: bootstrapLoaded が true になる。
-// 関連DD: DD-UI-004
 onMounted(async () => {
   if (!appStore.bootstrapLoaded) {
     await appStore.bootstrap()
   }
 })
 
-// watch(showProjectSelect) はプロジェクト選択ダイアログの表示を同期する。
-// 目的: projectRoot の有無でダイアログ表示を切り替える。
-// 入力: value は表示判定。
-// 出力: なし。
-// エラー: なし。
-// 副作用: showProjectDialog を更新する。
-// 並行性: 単一UIイベント前提。
-// 不変条件: プロジェクト未選択時は true。
-// 関連DD: DD-UI-004
+// プロジェクトロード完了後にカテゴリを読み込む
+watch(isReady, async (ready) => {
+  if (ready) {
+    await categoriesStore.loadCategories()
+    if (!categoriesStore.selectedCategory && categoriesStore.items.length > 0) {
+      await categoriesStore.selectCategory(categoriesStore.items[0].name)
+    }
+  }
+})
+
 watch(showProjectSelect, (value) => {
   showProjectDialog.value = value
 }, { immediate: true })
 
-// watch(needsContractorAuth) は Contractor ダイアログの表示を同期する。
-// 目的: モード判定結果に応じて認証を要求する。
-// 入力: value は表示判定。
-// 出力: なし。
-// エラー: なし。
-// 副作用: showContractorDialog を更新する。
-// 並行性: 単一UIイベント前提。
-// 不変条件: contractorAuthRequired が true の間は true。
-// 関連DD: DD-UI-008
 watch(needsContractorAuth, (value) => {
   showContractorDialog.value = value
 }, { immediate: true })
 
-// watch(projectRoot) はプロジェクト選択後にモード判定を行う。
-// 目的: Contractor 認証の要否を決定する。
-// 入力: value は projectRoot。
-// 出力: なし。
-// エラー: 失敗時は errors ストアへ登録される。
-// 副作用: バックエンド呼び出しを行う。
-// 並行性: 単一UIイベント前提。
-// 不変条件: projectRoot が空の時は判定しない。
-// 関連DD: DD-UI-008
 watch(() => appStore.projectRoot, async (value) => {
   if (value) {
     await appStore.detectMode()
   }
 })
 
-// handleOpenIssue は課題詳細ダイアログを開く。
-// 目的: 選択された課題の詳細を読み込み、ダイアログを表示する。
-// 入力: payload は category と issue_id を含む。
-// 出力: なし。
-// エラー: 取得失敗時は errors ストアへ登録される。
-// 副作用: バックエンド呼び出しとダイアログ表示を行う。
-// 並行性: 単一UIイベント前提。
-// 不変条件: category と issue_id が揃わない場合は何もしない。
-// 関連DD: DD-UI-006
 async function handleOpenIssue(payload) {
   const category = payload?.category ?? categoriesStore.selectedCategory
   if (!category || !payload?.issue_id) {
@@ -103,23 +78,50 @@ async function handleOpenIssue(payload) {
   showIssueDetailDialog.value = true
 }
 
-// handleOpenErrors はエラー詳細ダイアログを開く。
-// 目的: エラー一覧の確認を促す。
-// 入力: なし。
-// 出力: なし。
-// エラー: なし。
-// 副作用: showErrorDetailDialog を更新する。
-// 並行性: 単一UIイベント前提。
-// 不変条件: なし。
-// 関連DD: DD-UI-007
 function handleOpenErrors() {
   showErrorDetailDialog.value = true
+}
+
+async function handleSelectCategory(name) {
+  await categoriesStore.selectCategory(name)
+  // モバイルの場合は選択後にドロワーを閉じる (UX向上のため)
+  // if (window.innerWidth < 600) drawer.value = false 
+}
+
+async function handleCreateCategory() {
+  await categoriesStore.createCategory(newCategoryName.value)
+  newCategoryName.value = ''
+  showCreateDialog.value = false
+}
+
+function openRenameDialog(name) {
+  targetCategoryName.value = name
+  showRenameDialog.value = true
+}
+
+async function handleRenameCategory() {
+  if (!targetCategoryName.value) return
+  await categoriesStore.renameCategory(targetCategoryName.value, renameCategoryName.value)
+  renameCategoryName.value = ''
+  showRenameDialog.value = false
+}
+
+function openDeleteDialog(name) {
+  targetCategoryName.value = name
+  showDeleteDialog.value = true
+}
+
+async function handleDeleteCategory() {
+  if (!targetCategoryName.value) return
+  await categoriesStore.deleteCategory(targetCategoryName.value)
+  showDeleteDialog.value = false
 }
 </script>
 
 <template>
   <v-app>
-    <v-app-bar flat>
+    <v-app-bar density="compact">
+      <v-app-bar-nav-icon v-if="isReady" @click="drawer = !drawer" />
       <v-toolbar-title>ratta</v-toolbar-title>
       <v-spacer />
       <v-badge
@@ -128,14 +130,53 @@ function handleOpenErrors() {
         color="error"
         class="mr-3"
       >
-        <v-btn variant="tonal" @click="handleOpenErrors">
-          エラー詳細
+        <v-btn variant="tonal" @click="handleOpenErrors" icon="mdi-bell">
+          
         </v-btn>
       </v-badge>
-      <v-btn v-else variant="text" @click="handleOpenErrors">
-        エラー詳細
+      <v-btn v-else variant="text" @click="handleOpenErrors" icon="mdi-bell">
+        
       </v-btn>
     </v-app-bar>
+
+    <v-navigation-drawer v-if="isReady" v-model="drawer">
+      <v-list density="compact" nav>
+        <v-list-item
+          v-for="item in categoriesStore.items"
+          :key="item.name"
+          :active="item.name === selectedCategory"
+          @click="handleSelectCategory(item.name)"
+        >
+          <v-list-item-title>{{ item.name }}</v-list-item-title>
+          <template v-slot:append>
+             <v-badge v-if="item.issueCount" :content="item.issueCount" inline color="grey-lighten-1" />
+             <v-menu v-if="appStore.mode === 'Contractor'">
+               <template v-slot:activator="{ props }">
+                 <v-btn icon="mdi-dots-vertical" variant="text" size="small" v-bind="props" @click.stop />
+               </template>
+               <v-list>
+                 <v-list-item @click="openRenameDialog(item.name)">
+                   <v-list-item-title>変更</v-list-item-title>
+                 </v-list-item>
+                 <v-list-item @click="openDeleteDialog(item.name)">
+                   <v-list-item-title class="text-error">削除</v-list-item-title>
+                 </v-list-item>
+               </v-list>
+             </v-menu>
+          </template>
+        </v-list-item>
+      </v-list>
+
+      <template v-slot:append>
+        <div v-if="appStore.mode === 'Contractor'" class="pa-2">
+           <v-row dense>
+             <v-col cols="12">
+               <v-btn block variant="tonal" @click="showCreateDialog = true" class="mb-2" prepend-icon="mdi-plus-circle">カテゴリ追加</v-btn>
+             </v-col>
+           </v-row>
+        </div>
+      </template>
+    </v-navigation-drawer>
 
     <v-main>
       <MainView v-if="isReady" @open-issue="handleOpenIssue" />
@@ -145,5 +186,42 @@ function handleOpenErrors() {
     <ContractorPasswordDialog v-model="showContractorDialog" />
     <IssueDetailDialog v-model="showIssueDetailDialog" @open-errors="handleOpenErrors" />
     <ErrorDetailDialog v-model="showErrorDetailDialog" />
+
+    <v-dialog v-model="showCreateDialog" max-width="420">
+      <v-card rounded="lg">
+        <v-card-title class="text-subtitle-1">カテゴリ追加</v-card-title>
+        <v-card-text>
+          <v-text-field v-model="newCategoryName" label="カテゴリ名" />
+        </v-card-text>
+        <v-card-actions class="justify-end">
+          <v-btn variant="text" @click="showCreateDialog = false">キャンセル</v-btn>
+          <v-btn variant="flat" color="primary" @click="handleCreateCategory"> 追加 </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="showRenameDialog" max-width="420">
+      <v-card rounded="lg">
+        <v-card-title class="text-subtitle-1">カテゴリ名変更</v-card-title>
+        <v-card-text>
+          <v-text-field v-model="renameCategoryName" label="新しいカテゴリ名" />
+        </v-card-text>
+        <v-card-actions class="justify-end">
+          <v-btn variant="text" @click="showRenameDialog = false">キャンセル</v-btn>
+          <v-btn variant="flat" color="primary" @click="handleRenameCategory"> 変更 </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="showDeleteDialog" max-width="420">
+      <v-card rounded="lg">
+        <v-card-title class="text-subtitle-1">カテゴリ削除</v-card-title>
+        <v-card-text>選択中のカテゴリを削除しますか？</v-card-text>
+        <v-card-actions class="justify-end">
+          <v-btn variant="text" @click="showDeleteDialog = false">キャンセル</v-btn>
+          <v-btn variant="flat" color="error" @click="handleDeleteCategory"> 削除 </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-app>
 </template>

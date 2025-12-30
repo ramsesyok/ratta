@@ -14,12 +14,7 @@ const appStore = useAppStore()
 const categoriesStore = useCategoriesStore()
 const issuesStore = useIssuesStore()
 
-const showCreateDialog = ref(false)
-const showRenameDialog = ref(false)
-const showDeleteDialog = ref(false)
 const showIssueCreateDialog = ref(false)
-const newCategoryName = ref('')
-const renameCategoryName = ref('')
 const newIssueTitle = ref('')
 const newIssueDescription = ref('')
 const newIssueDueDate = ref('')
@@ -36,6 +31,10 @@ const filterPriority = ref([])
 const filterDueFrom = ref('')
 const filterDueTo = ref('')
 const filterSchemaInvalid = ref(false)
+const showFilterDueFromPicker = ref(false)
+const showFilterDueToPicker = ref(false)
+const filterDueFromPickerDate = ref(null)
+const filterDueToPickerDate = ref(null)
 
 const statusOptions = [
   'Open',
@@ -104,30 +103,13 @@ const filteredItems = computed(() => {
   })
 })
 
-onMounted(async () => {
-  // 起動時にカテゴリ一覧を読み込み、未選択なら先頭を選ぶ。
-  await categoriesStore.loadCategories()
-  if (!categoriesStore.selectedCategory && categoriesStore.items.length > 0) {
-    await categoriesStore.selectCategory(categoriesStore.items[0].name)
-  }
-  const query = currentQuery.value
-  filterText.value = query.filter.text
-  filterStatus.value = query.filter.status
-  filterPriority.value = query.filter.priority
-  filterDueFrom.value = query.filter.dueDateFrom ?? ''
-  filterDueTo.value = query.filter.dueDateTo ?? ''
-  filterSchemaInvalid.value = query.filter.schemaInvalidOnly
-})
-
 watch(selectedCategory, async (value) => {
   if (value && !issuesStore.issuesByCategory[value]) {
     await issuesStore.loadIssues(value)
   }
 })
 
-async function handleSelectCategory(name) {
-  await categoriesStore.selectCategory(name)
-}
+
 
 function isEndState(status) {
   return status === 'Closed' || status === 'Rejected'
@@ -169,28 +151,7 @@ async function handlePageChange(page) {
   }
 }
 
-async function handleCreateCategory() {
-  await categoriesStore.createCategory(newCategoryName.value)
-  newCategoryName.value = ''
-  showCreateDialog.value = false
-}
 
-async function handleRenameCategory() {
-  if (!selectedCategory.value) {
-    return
-  }
-  await categoriesStore.renameCategory(selectedCategory.value, renameCategoryName.value)
-  renameCategoryName.value = ''
-  showRenameDialog.value = false
-}
-
-async function handleDeleteCategory() {
-  if (!selectedCategory.value) {
-    return
-  }
-  await categoriesStore.deleteCategory(selectedCategory.value)
-  showDeleteDialog.value = false
-}
 
 // handleOpenIssueCreateDialog は新規課題ダイアログを開く。
 // 目的: 入力状態を初期化して作成フォームを表示する。
@@ -269,6 +230,19 @@ function handleCreateIssueDateUpdate(value) {
   showCreateIssueDatePicker.value = false
 }
 
+function handleFilterDueFromUpdate(value) {
+  filterDueFrom.value = formatDate(value)
+  showFilterDueFromPicker.value = false
+  applyFilter()
+}
+
+function handleFilterDueToUpdate(value) {
+  filterDueTo.value = formatDate(value)
+  showFilterDueToPicker.value = false
+  applyFilter()
+}
+
+
 // handleOpenIssue は課題詳細ダイアログの表示を要求する。
 // 目的: 選択した課題を上位コンポーネントへ通知する。
 // 入力: item は課題行の情報。
@@ -286,80 +260,62 @@ function handleOpenIssue(item) {
 }
 
 // テスト用にフィルタ操作を公開する。
+// コンポーネントマウント時に初期フィルタをセットする
+onMounted(() => {
+   const query = currentQuery.value
+  filterText.value = query.filter.text
+  filterStatus.value = query.filter.status
+  filterPriority.value = query.filter.priority
+  filterDueFrom.value = query.filter.dueDateFrom ?? ''
+  filterDueTo.value = query.filter.dueDateTo ?? ''
+  filterSchemaInvalid.value = query.filter.schemaInvalidOnly
+})
+
 defineExpose({ applyFilter })
 </script>
 
 <template>
   <v-container class="py-6" fluid>
     <v-row>
-      <v-col cols="3">
-        <v-card rounded="lg" class="mb-4">
-          <v-card-title class="text-subtitle-1">カテゴリ</v-card-title>
-          <v-card-text>
-            <v-list density="compact">
-              <v-list-item
-                v-for="item in categoriesStore.items"
-                :key="item.name"
-                :active="item.name === selectedCategory"
-                @click="handleSelectCategory(item.name)"
-              >
-                <v-list-item-title>{{ item.name }}</v-list-item-title>
-                <v-list-item-subtitle v-if="item.issueCount">
-                  {{ item.issueCount }}件
-                </v-list-item-subtitle>
-              </v-list-item>
-            </v-list>
-          </v-card-text>
-          <v-card-actions v-if="appStore.mode === 'Contractor'">
-            <v-btn size="small" variant="tonal" @click="showCreateDialog = true"> 追加 </v-btn>
-            <v-btn
-              size="small"
-              variant="text"
-              :disabled="!selectedCategory"
-              @click="showRenameDialog = true"
-            >
-              変更
-            </v-btn>
-            <v-btn
-              size="small"
-              variant="text"
-              color="error"
-              :disabled="!selectedCategory"
-              @click="showDeleteDialog = true"
-            >
-              削除
-            </v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-col>
-      <v-col cols="9">
+
+      <v-col cols="12">
         <v-card rounded="lg">
           <v-card-title class="text-subtitle-1 d-flex align-center">
             課題一覧
             <v-spacer />
+            <!-- <v-checkbox
+              v-model="filterSchemaInvalid"
+              label="エラー課題"
+              density="compact"
+              hide-details
+              class="mr-4"
+              @update:model-value="applyFilter"
+            /> -->
             <v-btn
               size="small"
               variant="tonal"
               color="primary"
               :disabled="!selectedCategory"
               @click="handleOpenIssueCreateDialog"
+              prepend-icon="mdi-plus"
             >
               新規課題
             </v-btn>
           </v-card-title>
           <v-card-text>
             <v-row class="mb-4" dense>
-              <v-col cols="4">
+              <v-col cols="6">
                 <v-text-field
                   v-model="filterText"
                   data-testid="filter-text"
                   label="検索"
                   variant="outlined"
                   density="compact"
+                  prepend-inner-icon="mdi-magnify"
                   @update:model-value="applyFilter"
                 />
               </v-col>
-              <v-col cols="3">
+              <v-col cols="2">
                 <v-select
                   v-model="filterStatus"
                   :items="statusOptions"
@@ -370,7 +326,7 @@ defineExpose({ applyFilter })
                   @update:model-value="applyFilter"
                 />
               </v-col>
-              <v-col cols="3">
+              <v-col cols="2">
                 <v-select
                   v-model="filterPriority"
                   :items="priorityOptions"
@@ -381,34 +337,60 @@ defineExpose({ applyFilter })
                   @update:model-value="applyFilter"
                 />
               </v-col>
-              <v-col cols="2" class="d-flex align-center">
-                <v-checkbox
-                  v-model="filterSchemaInvalid"
-                  label="不整合のみ"
-                  density="compact"
-                  @update:model-value="applyFilter"
-                />
+              <!-- <v-col cols="3">
+                <v-menu
+                  v-model="showFilterDueFromPicker"
+                  :close-on-content-click="false"
+                  min-width="auto"
+                >
+                  <template v-slot:activator="{ props }">
+                    <v-text-field
+                      v-model="filterDueFrom"
+                      label="期限From"
+                      readonly
+                      v-bind="props"
+                      variant="outlined"
+                      density="compact"
+                      placeholder="YYYY-MM-DD"
+                      prepend-inner-icon="mdi-calendar"
+                      clearable
+                      @click:clear="filterDueFrom = ''; applyFilter()"
+                    />
+                  </template>
+                  <v-date-picker
+                    v-model="filterDueFromPickerDate"
+                    color="primary"
+                    @update:model-value="handleFilterDueFromUpdate"
+                  />
+                </v-menu>
               </v-col>
               <v-col cols="3">
-                <v-text-field
-                  v-model="filterDueFrom"
-                  label="期限From"
-                  variant="outlined"
-                  density="compact"
-                  placeholder="YYYY-MM-DD"
-                  @update:model-value="applyFilter"
-                />
-              </v-col>
-              <v-col cols="3">
-                <v-text-field
-                  v-model="filterDueTo"
-                  label="期限To"
-                  variant="outlined"
-                  density="compact"
-                  placeholder="YYYY-MM-DD"
-                  @update:model-value="applyFilter"
-                />
-              </v-col>
+                <v-menu
+                  v-model="showFilterDueToPicker"
+                  :close-on-content-click="false"
+                  min-width="auto"
+                >
+                  <template v-slot:activator="{ props }">
+                    <v-text-field
+                      v-model="filterDueTo"
+                      label="期限To"
+                      readonly
+                      v-bind="props"
+                      variant="outlined"
+                      density="compact"
+                      placeholder="YYYY-MM-DD"
+                      prepend-inner-icon="mdi-calendar"
+                      clearable
+                      @click:clear="filterDueTo = ''; applyFilter()"
+                    />
+                  </template>
+                  <v-date-picker
+                    v-model="filterDueToPickerDate"
+                    color="primary"
+                    @update:model-value="handleFilterDueToUpdate"
+                  />
+                </v-menu>
+              </v-col>  -->
             </v-row>
 
             <v-table density="compact">
@@ -487,42 +469,7 @@ defineExpose({ applyFilter })
       </v-col>
     </v-row>
 
-    <v-dialog v-model="showCreateDialog" max-width="420">
-      <v-card rounded="lg">
-        <v-card-title class="text-subtitle-1">カテゴリ追加</v-card-title>
-        <v-card-text>
-          <v-text-field v-model="newCategoryName" label="カテゴリ名" />
-        </v-card-text>
-        <v-card-actions class="justify-end">
-          <v-btn variant="text" @click="showCreateDialog = false">キャンセル</v-btn>
-          <v-btn variant="flat" color="primary" @click="handleCreateCategory"> 追加 </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
 
-    <v-dialog v-model="showRenameDialog" max-width="420">
-      <v-card rounded="lg">
-        <v-card-title class="text-subtitle-1">カテゴリ名変更</v-card-title>
-        <v-card-text>
-          <v-text-field v-model="renameCategoryName" label="新しいカテゴリ名" />
-        </v-card-text>
-        <v-card-actions class="justify-end">
-          <v-btn variant="text" @click="showRenameDialog = false">キャンセル</v-btn>
-          <v-btn variant="flat" color="primary" @click="handleRenameCategory"> 変更 </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
-    <v-dialog v-model="showDeleteDialog" max-width="420">
-      <v-card rounded="lg">
-        <v-card-title class="text-subtitle-1">カテゴリ削除</v-card-title>
-        <v-card-text>選択中のカテゴリを削除しますか？</v-card-text>
-        <v-card-actions class="justify-end">
-          <v-btn variant="text" @click="showDeleteDialog = false">キャンセル</v-btn>
-          <v-btn variant="flat" color="error" @click="handleDeleteCategory"> 削除 </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
 
     <v-dialog v-model="showIssueCreateDialog" max-width="640">
       <v-card rounded="lg">
