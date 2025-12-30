@@ -6,6 +6,7 @@ import { useIssuesStore } from '../stores/issues'
 
 vi.mock('../utils/apiClient', () => ({
   ApiError: class ApiError extends Error {},
+  createIssue: vi.fn(),
   listIssues: vi.fn()
 }))
 
@@ -35,5 +36,25 @@ describe('issues store', () => {
     await store.loadIssues('Cat')
 
     expect(store.issuesByCategory.Cat.items.length).toBe(1)
+  })
+
+  it('creates issue and refreshes list', async () => {
+    // 作成成功時に一覧が再読み込みされることを確認する。
+    setActivePinia(createPinia())
+    const store = useIssuesStore()
+
+    apiClient.createIssue.mockResolvedValue({ issue_id: 'new' })
+    apiClient.listIssues.mockResolvedValue({ issues: [{ issue_id: 'new' }], total: 1 })
+
+    const result = await store.createIssue('Cat', {
+      title: 'title',
+      description: 'desc',
+      due_date: '2024-01-01',
+      priority: 'High',
+      assignee: ''
+    })
+
+    expect(result.issue_id).toBe('new')
+    expect(apiClient.listIssues).toHaveBeenCalled()
   })
 })

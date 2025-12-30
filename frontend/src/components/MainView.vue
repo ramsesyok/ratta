@@ -16,8 +16,16 @@ const issuesStore = useIssuesStore()
 const showCreateDialog = ref(false)
 const showRenameDialog = ref(false)
 const showDeleteDialog = ref(false)
+const showIssueCreateDialog = ref(false)
 const newCategoryName = ref('')
 const renameCategoryName = ref('')
+const newIssueTitle = ref('')
+const newIssueDescription = ref('')
+const newIssueDueDate = ref('')
+// 優先度は必須入力のため初期値を設定する。
+const newIssuePriority = ref('Medium')
+const newIssueAssignee = ref('')
+const issueCreateErrorMessage = ref('')
 
 const filterText = ref('')
 const filterStatus = ref([])
@@ -181,6 +189,72 @@ async function handleDeleteCategory() {
   showDeleteDialog.value = false
 }
 
+// handleOpenIssueCreateDialog は新規課題ダイアログを開く。
+// 目的: 入力状態を初期化して作成フォームを表示する。
+// 入力: なし。
+// 出力: なし。
+// エラー: なし。
+// 副作用: 入力状態とダイアログ表示を更新する。
+// 並行性: 単一UIイベント前提。
+// 不変条件: ダイアログ表示時はエラーメッセージが空になる。
+// 関連DD: DD-UI-006
+function handleOpenIssueCreateDialog() {
+  resetIssueCreateForm()
+  showIssueCreateDialog.value = true
+}
+
+// resetIssueCreateForm は新規課題入力を初期化する。
+// 目的: ダイアログ再利用時に前回入力を残さない。
+// 入力: なし。
+// 出力: なし。
+// エラー: なし。
+// 副作用: 入力用のrefを初期化する。
+// 並行性: 単一UIイベント前提。
+// 不変条件: 必須項目は空または既定値に戻る。
+// 関連DD: DD-UI-006
+function resetIssueCreateForm() {
+  newIssueTitle.value = ''
+  newIssueDescription.value = ''
+  newIssueDueDate.value = ''
+  newIssuePriority.value = 'Medium'
+  newIssueAssignee.value = ''
+  issueCreateErrorMessage.value = ''
+}
+
+// handleCreateIssue は新規課題の作成を実行する。
+// 目的: 入力内容を検証し、課題作成APIを呼び出す。
+// 入力: なし。
+// 出力: 成功時はダイアログを閉じる。
+// エラー: 必須未入力やAPI失敗時はメッセージを表示する。
+// 副作用: バックエンド呼び出しと一覧再取得を行う。
+// 並行性: 単一UIイベント前提。
+// 不変条件: 必須項目が空の場合は作成しない。
+// 関連DD: DD-UI-006
+async function handleCreateIssue() {
+  if (!selectedCategory.value) {
+    issueCreateErrorMessage.value = 'カテゴリを選択してください。'
+    return
+  }
+  if (!newIssueTitle.value || !newIssueDescription.value || !newIssueDueDate.value || !newIssuePriority.value) {
+    issueCreateErrorMessage.value = '必須項目を入力してください。'
+    return
+  }
+  issueCreateErrorMessage.value = ''
+  const result = await issuesStore.createIssue(selectedCategory.value, {
+    title: newIssueTitle.value,
+    description: newIssueDescription.value,
+    due_date: newIssueDueDate.value,
+    priority: newIssuePriority.value,
+    assignee: newIssueAssignee.value
+  })
+  if (result) {
+    showIssueCreateDialog.value = false
+    resetIssueCreateForm()
+  } else {
+    issueCreateErrorMessage.value = '課題の作成に失敗しました。'
+  }
+}
+
 // handleOpenIssue は課題詳細ダイアログの表示を要求する。
 // 目的: 選択した課題を上位コンポーネントへ通知する。
 // 入力: item は課題行の情報。
@@ -248,7 +322,19 @@ defineExpose({ applyFilter })
       </v-col>
       <v-col cols="9">
         <v-card rounded="lg">
-          <v-card-title class="text-subtitle-1">課題一覧</v-card-title>
+          <v-card-title class="text-subtitle-1 d-flex align-center">
+            課題一覧
+            <v-spacer />
+            <v-btn
+              size="small"
+              variant="tonal"
+              color="teal"
+              :disabled="!selectedCategory"
+              @click="handleOpenIssueCreateDialog"
+            >
+              新規課題
+            </v-btn>
+          </v-card-title>
           <v-card-text>
             <v-row class="mb-4" dense>
               <v-col cols="4">
@@ -427,6 +513,56 @@ defineExpose({ applyFilter })
           <v-btn variant="text" @click="showDeleteDialog = false">キャンセル</v-btn>
           <v-btn variant="flat" color="error" @click="handleDeleteCategory">
             削除
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="showIssueCreateDialog" max-width="640">
+      <v-card rounded="lg">
+        <v-card-title class="text-subtitle-1">課題の新規作成</v-card-title>
+        <v-card-text>
+          <v-alert
+            v-if="issueCreateErrorMessage"
+            type="error"
+            variant="tonal"
+            class="mb-4"
+          >
+            {{ issueCreateErrorMessage }}
+          </v-alert>
+          <v-text-field v-model="newIssueTitle" label="件名" variant="outlined" density="comfortable" />
+          <v-textarea
+            v-model="newIssueDescription"
+            label="内容"
+            variant="outlined"
+            density="comfortable"
+            rows="4"
+          />
+          <v-text-field
+            v-model="newIssueDueDate"
+            label="期限"
+            variant="outlined"
+            density="comfortable"
+            placeholder="YYYY-MM-DD"
+          />
+          <v-select
+            v-model="newIssuePriority"
+            :items="priorityOptions"
+            label="優先度"
+            variant="outlined"
+            density="comfortable"
+          />
+          <v-text-field
+            v-model="newIssueAssignee"
+            label="担当者"
+            variant="outlined"
+            density="comfortable"
+          />
+        </v-card-text>
+        <v-card-actions class="justify-end">
+          <v-btn variant="text" @click="showIssueCreateDialog = false">キャンセル</v-btn>
+          <v-btn variant="flat" color="teal" @click="handleCreateIssue">
+            作成
           </v-btn>
         </v-card-actions>
       </v-card>
