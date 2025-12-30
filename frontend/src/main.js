@@ -7,5 +7,9 @@ import './style.css'
 
 const app = createApp(App)
 app.use(createPinia())
-app.use(createVuetify())
+app.use(createVuetify({
+    theme: {
+        defaultTheme: 'dark',
+    },
+}))
 app.mount('#app')

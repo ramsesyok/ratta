@@ -6,6 +6,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useAppStore } from '../stores/app'
 import { useCategoriesStore } from '../stores/categories'
 import { useIssuesStore } from '../stores/issues'
+import { formatDate } from '../utils/time'
 
 const emit = defineEmits(['open-issue'])
 
@@ -26,6 +27,8 @@ const newIssueDueDate = ref('')
 const newIssuePriority = ref('Medium')
 const newIssueAssignee = ref('')
 const issueCreateErrorMessage = ref('')
+const showCreateIssueDatePicker = ref(false)
+const createIssuePickerDate = ref(null)
 
 const filterText = ref('')
 const filterStatus = ref([])
@@ -42,7 +45,7 @@ const statusOptions = [
   'Feedback',
   'Resolved',
   'Closed',
-  'Rejected'
+  'Rejected',
 ]
 const priorityOptions = ['High', 'Medium', 'Low']
 
@@ -156,7 +159,7 @@ function applyFilter() {
     priority: filterPriority.value,
     dueDateFrom: filterDueFrom.value || null,
     dueDateTo: filterDueTo.value || null,
-    schemaInvalidOnly: filterSchemaInvalid.value
+    schemaInvalidOnly: filterSchemaInvalid.value,
   })
 }
 
@@ -219,6 +222,7 @@ function resetIssueCreateForm() {
   newIssuePriority.value = 'Medium'
   newIssueAssignee.value = ''
   issueCreateErrorMessage.value = ''
+  createIssuePickerDate.value = null
 }
 
 // handleCreateIssue は新規課題の作成を実行する。
@@ -235,7 +239,12 @@ async function handleCreateIssue() {
     issueCreateErrorMessage.value = 'カテゴリを選択してください。'
     return
   }
-  if (!newIssueTitle.value || !newIssueDescription.value || !newIssueDueDate.value || !newIssuePriority.value) {
+  if (
+    !newIssueTitle.value ||
+    !newIssueDescription.value ||
+    !newIssueDueDate.value ||
+    !newIssuePriority.value
+  ) {
     issueCreateErrorMessage.value = '必須項目を入力してください。'
     return
   }
@@ -245,7 +254,7 @@ async function handleCreateIssue() {
     description: newIssueDescription.value,
     due_date: newIssueDueDate.value,
     priority: newIssuePriority.value,
-    assignee: newIssueAssignee.value
+    assignee: newIssueAssignee.value,
   })
   if (result) {
     showIssueCreateDialog.value = false
@@ -253,6 +262,11 @@ async function handleCreateIssue() {
   } else {
     issueCreateErrorMessage.value = '課題の作成に失敗しました。'
   }
+}
+
+function handleCreateIssueDateUpdate(value) {
+  newIssueDueDate.value = formatDate(value)
+  showCreateIssueDatePicker.value = false
 }
 
 // handleOpenIssue は課題詳細ダイアログの表示を要求する。
@@ -297,9 +311,7 @@ defineExpose({ applyFilter })
             </v-list>
           </v-card-text>
           <v-card-actions v-if="appStore.mode === 'Contractor'">
-            <v-btn size="small" variant="tonal" @click="showCreateDialog = true">
-              追加
-            </v-btn>
+            <v-btn size="small" variant="tonal" @click="showCreateDialog = true"> 追加 </v-btn>
             <v-btn
               size="small"
               variant="text"
@@ -328,7 +340,7 @@ defineExpose({ applyFilter })
             <v-btn
               size="small"
               variant="tonal"
-              color="teal"
+              color="primary"
               :disabled="!selectedCategory"
               @click="handleOpenIssueCreateDialog"
             >
@@ -441,7 +453,7 @@ defineExpose({ applyFilter })
                   :class="{
                     'issue-row--closed': isEndState(item.status),
                     'issue-row--schema': item.is_schema_invalid,
-                    'issue-row--clickable': true
+                    'issue-row--clickable': true,
                   }"
                   @click="handleOpenIssue(item)"
                 >
@@ -483,9 +495,7 @@ defineExpose({ applyFilter })
         </v-card-text>
         <v-card-actions class="justify-end">
           <v-btn variant="text" @click="showCreateDialog = false">キャンセル</v-btn>
-          <v-btn variant="flat" color="teal" @click="handleCreateCategory">
-            追加
-          </v-btn>
+          <v-btn variant="flat" color="primary" @click="handleCreateCategory"> 追加 </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -498,9 +508,7 @@ defineExpose({ applyFilter })
         </v-card-text>
         <v-card-actions class="justify-end">
           <v-btn variant="text" @click="showRenameDialog = false">キャンセル</v-btn>
-          <v-btn variant="flat" color="teal" @click="handleRenameCategory">
-            変更
-          </v-btn>
+          <v-btn variant="flat" color="primary" @click="handleRenameCategory"> 変更 </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -511,9 +519,7 @@ defineExpose({ applyFilter })
         <v-card-text>選択中のカテゴリを削除しますか？</v-card-text>
         <v-card-actions class="justify-end">
           <v-btn variant="text" @click="showDeleteDialog = false">キャンセル</v-btn>
-          <v-btn variant="flat" color="error" @click="handleDeleteCategory">
-            削除
-          </v-btn>
+          <v-btn variant="flat" color="error" @click="handleDeleteCategory"> 削除 </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -522,15 +528,15 @@ defineExpose({ applyFilter })
       <v-card rounded="lg">
         <v-card-title class="text-subtitle-1">課題の新規作成</v-card-title>
         <v-card-text>
-          <v-alert
-            v-if="issueCreateErrorMessage"
-            type="error"
-            variant="tonal"
-            class="mb-4"
-          >
+          <v-alert v-if="issueCreateErrorMessage" type="error" variant="tonal" class="mb-4">
             {{ issueCreateErrorMessage }}
           </v-alert>
-          <v-text-field v-model="newIssueTitle" label="件名" variant="outlined" density="comfortable" />
+          <v-text-field
+            v-model="newIssueTitle"
+            label="件名"
+            variant="outlined"
+            density="comfortable"
+          />
           <v-textarea
             v-model="newIssueDescription"
             label="内容"
@@ -538,13 +544,29 @@ defineExpose({ applyFilter })
             density="comfortable"
             rows="4"
           />
-          <v-text-field
-            v-model="newIssueDueDate"
-            label="期限"
-            variant="outlined"
-            density="comfortable"
-            placeholder="YYYY-MM-DD"
-          />
+          <v-menu
+            v-model="showCreateIssueDatePicker"
+            :close-on-content-click="false"
+            min-width="auto"
+          >
+            <template v-slot:activator="{ props }">
+              <v-text-field
+                v-model="newIssueDueDate"
+                label="期限"
+                readonly
+                v-bind="props"
+                variant="outlined"
+                density="comfortable"
+                placeholder="YYYY-MM-DD"
+                prepend-inner-icon="mdi-calendar"
+              />
+            </template>
+            <v-date-picker
+              v-model="createIssuePickerDate"
+              color="primary"
+              @update:model-value="handleCreateIssueDateUpdate"
+            />
+          </v-menu>
           <v-select
             v-model="newIssuePriority"
             :items="priorityOptions"
@@ -561,9 +583,7 @@ defineExpose({ applyFilter })
         </v-card-text>
         <v-card-actions class="justify-end">
           <v-btn variant="text" @click="showIssueCreateDialog = false">キャンセル</v-btn>
-          <v-btn variant="flat" color="teal" @click="handleCreateIssue">
-            作成
-          </v-btn>
+          <v-btn variant="flat" color="primary" @click="handleCreateIssue"> 作成 </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

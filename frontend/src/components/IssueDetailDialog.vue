@@ -7,12 +7,13 @@ import { computed, ref, watch } from 'vue'
 import { useCategoriesStore } from '../stores/categories'
 import { useErrorsStore } from '../stores/errors'
 import { useIssueDetailStore } from '../stores/issueDetail'
+import { formatDate } from '../utils/time'
 
 const props = defineProps({
   modelValue: {
     type: Boolean,
-    default: true
-  }
+    default: true,
+  },
 })
 
 const emit = defineEmits(['update:modelValue', 'open-errors'])
@@ -32,14 +33,17 @@ const editStatus = ref('')
 const editPriority = ref('')
 const editDueDate = ref('')
 const editAssignee = ref('')
+const showEditDatePicker = ref(false)
+const editPickerDate = ref(null)
 
 const commentBody = ref('')
 const commentAuthor = ref('')
 const commentAttachments = ref([])
+const showCommentInput = ref(false)
 
 const isOpen = computed({
   get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value)
+  set: (value) => emit('update:modelValue', value),
 })
 
 const current = computed(() => issueDetailStore.current)
@@ -104,13 +108,14 @@ function enterEdit() {
       source: 'issueDetail',
       action: 'enterEdit',
       category: currentCategory.value,
-      issue_id: current.value?.issue_id
+      issue_id: current.value?.issue_id,
     })
     emit('open-errors')
     return
   }
   editMode.value = true
   errorMessage.value = ''
+  editPickerDate.value = null
 }
 
 // cancelEdit は編集モードを終了して表示値を復元する。
@@ -125,6 +130,7 @@ function enterEdit() {
 function cancelEdit() {
   editMode.value = false
   errorMessage.value = ''
+  editPickerDate.value = null
   if (current.value) {
     editTitle.value = current.value.title ?? ''
     editDescription.value = current.value.description ?? ''
@@ -154,12 +160,18 @@ async function saveEdit() {
       source: 'issueDetail',
       action: 'saveIssue',
       category: currentCategory.value,
-      issue_id: current.value.issue_id
+      issue_id: current.value.issue_id,
     })
     emit('open-errors')
     return
   }
-  if (!editTitle.value || !editDescription.value || !editStatus.value || !editPriority.value || !editDueDate.value) {
+  if (
+    !editTitle.value ||
+    !editDescription.value ||
+    !editStatus.value ||
+    !editPriority.value ||
+    !editDueDate.value
+  ) {
     errorMessage.value = '必須項目を入力してください。'
     return
   }
@@ -170,7 +182,7 @@ async function saveEdit() {
     status: editStatus.value,
     priority: editPriority.value,
     due_date: editDueDate.value,
-    assignee: editAssignee.value
+    assignee: editAssignee.value,
   })
   if (result) {
     editMode.value = false
@@ -192,7 +204,7 @@ function handleFileChange(event) {
     files.map((file) => ({
       source_path: '',
       original_file_name: file.name,
-      mime_type: file.type
+      mime_type: file.type,
     }))
   )
   // 添付上限は UI で超過入力されても切り捨てる。
@@ -219,7 +231,7 @@ async function addComment() {
       source: 'comments',
       action: 'addComment',
       category: currentCategory.value,
-      issue_id: current.value.issue_id
+      issue_id: current.value.issue_id,
     })
     emit('open-errors')
     return
@@ -236,12 +248,13 @@ async function addComment() {
   const result = await issueDetailStore.addComment({
     body: commentBody.value,
     author_name: commentAuthor.value,
-    attachments: commentAttachments.value
+    attachments: commentAttachments.value,
   })
   if (result) {
     commentBody.value = ''
     commentAuthor.value = ''
     commentAttachments.value = []
+    showCommentInput.value = false
   }
 }
 
@@ -257,42 +270,35 @@ async function addComment() {
 function renderMarkdown(value) {
   return md.render(value ?? '')
 }
+
+function handleEditDateUpdate(value) {
+  editDueDate.value = formatDate(value)
+  showEditDatePicker.value = false
+}
 </script>
 
 <template>
   <v-dialog v-model="isOpen" max-width="960">
     <v-card rounded="lg">
-      <v-card-title class="text-h6">
-        課題詳細
-      </v-card-title>
+      <v-card-title class="text-h6"> 課題詳細 </v-card-title>
       <v-card-text v-if="current">
-        <v-alert
-          v-if="isBlocked"
-          type="warning"
-          variant="tonal"
-          class="mb-4"
-        >
+        <v-alert v-if="isBlocked" type="warning" variant="tonal" class="mb-4">
           スキーマ不整合または読み取り専用のため編集できません。
-          <v-btn variant="text" size="small" @click="$emit('open-errors')">
-            エラー詳細
-          </v-btn>
+          <v-btn variant="text" size="small" @click="$emit('open-errors')"> エラー詳細 </v-btn>
         </v-alert>
-        <v-alert
-          v-if="errorMessage"
-          type="error"
-          variant="tonal"
-          class="mb-4"
-        >
+        <v-alert v-if="errorMessage" type="error" variant="tonal" class="mb-4">
           {{ errorMessage }}
         </v-alert>
 
         <div v-if="!editMode">
           <p class="text-h6 mb-2">{{ current.title }}</p>
           <p class="text-body-2 mb-2">{{ current.description }}</p>
-          <p class="text-caption mb-1">ステータス: {{ current.status }}</p>
-          <p class="text-caption mb-1">優先度: {{ current.priority }}</p>
-          <p class="text-caption mb-1">期限: {{ current.due_date }}</p>
-          <p class="text-caption mb-1">担当: {{ current.assignee || '未設定' }}</p>
+          <div class="d-flex flex-wrap ga-4 mb-2 text-caption">
+            <span>ステータス: {{ current.status }}</span>
+            <span>優先度: {{ current.priority }}</span>
+            <span>期限: {{ current.due_date }}</span>
+            <span>担当: {{ current.assignee || '未設定' }}</span>
+          </div>
           <v-btn
             data-testid="edit"
             variant="tonal"
@@ -310,24 +316,40 @@ function renderMarkdown(value) {
           <v-textarea v-model="editDescription" label="詳細" rows="4" />
           <v-select
             v-model="editStatus"
-            :items="['Open','Working','Inquiry','Hold','Feedback','Resolved','Closed','Rejected']"
+            :items="[
+              'Open',
+              'Working',
+              'Inquiry',
+              'Hold',
+              'Feedback',
+              'Resolved',
+              'Closed',
+              'Rejected',
+            ]"
             label="ステータス"
           />
-          <v-select
-            v-model="editPriority"
-            :items="['High','Medium','Low']"
-            label="優先度"
-          />
-          <v-text-field v-model="editDueDate" label="期限" placeholder="YYYY-MM-DD" />
+          <v-select v-model="editPriority" :items="['High', 'Medium', 'Low']" label="優先度" />
+          <v-menu v-model="showEditDatePicker" :close-on-content-click="false" min-width="auto">
+            <template v-slot:activator="{ props }">
+              <v-text-field
+                v-model="editDueDate"
+                label="期限"
+                readonly
+                v-bind="props"
+                placeholder="YYYY-MM-DD"
+                prepend-inner-icon="mdi-calendar"
+              />
+            </template>
+            <v-date-picker
+              v-model="editPickerDate"
+              color="primary"
+              @update:model-value="handleEditDateUpdate"
+            />
+          </v-menu>
           <v-text-field v-model="editAssignee" label="担当者" />
           <v-card-actions class="justify-end">
             <v-btn variant="text" @click="cancelEdit">キャンセル</v-btn>
-            <v-btn
-              data-testid="save"
-              variant="flat"
-              color="teal"
-              @click="saveEdit"
-            >
+            <v-btn data-testid="save" variant="flat" color="primary" @click="saveEdit">
               保存
             </v-btn>
           </v-card-actions>
@@ -336,32 +358,53 @@ function renderMarkdown(value) {
         <v-divider class="my-4" />
 
         <div>
-          <p class="text-subtitle-2 mb-2">コメント</p>
-          <v-text-field v-model="commentAuthor" label="作成者名" data-testid="comment-author" />
-          <v-textarea v-model="commentBody" label="コメント本文" rows="3" data-testid="comment-body" />
-          <input
-            type="file"
-            multiple
-            :disabled="isBlocked"
-            data-testid="comment-files"
-            @change="handleFileChange"
-          />
-          <v-btn
-            data-testid="comment-submit"
-            variant="flat"
-            color="primary"
-            class="mt-2"
-            :disabled="isBlocked"
-            @click="addComment"
-          >
-            コメント追加
-          </v-btn>
+          <div class="d-flex align-center justify-space-between mb-2">
+            <p class="text-subtitle-2">コメント</p>
+            <v-btn
+              v-if="!showCommentInput"
+              variant="text"
+              size="small"
+              color="primary"
+              prepend-icon="mdi-plus"
+              @click="showCommentInput = true"
+            >
+              コメントを追加
+            </v-btn>
+          </div>
+
+          <v-expand-transition>
+            <div v-if="showCommentInput">
+              <v-text-field v-model="commentAuthor" label="作成者名" data-testid="comment-author" />
+              <v-textarea
+                v-model="commentBody"
+                label="コメント本文"
+                rows="3"
+                data-testid="comment-body"
+              />
+              <input
+                type="file"
+                multiple
+                :disabled="isBlocked"
+                data-testid="comment-files"
+                @change="handleFileChange"
+              />
+              <v-card-actions class="justify-end px-0">
+                <v-btn variant="text" @click="showCommentInput = false">キャンセル</v-btn>
+                <v-btn
+                  data-testid="comment-submit"
+                  variant="flat"
+                  color="primary"
+                  :disabled="isBlocked"
+                  @click="addComment"
+                >
+                  コメント追加
+                </v-btn>
+              </v-card-actions>
+            </div>
+          </v-expand-transition>
 
           <v-list class="mt-4">
-            <v-list-item
-              v-for="comment in current.comments"
-              :key="comment.comment_id"
-            >
+            <v-list-item v-for="comment in current.comments" :key="comment.comment_id">
               <v-list-item-title>{{ comment.author_name }}</v-list-item-title>
               <v-list-item-subtitle>
                 <div v-html="renderMarkdown(comment.body)" />

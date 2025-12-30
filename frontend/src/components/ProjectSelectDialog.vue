@@ -10,8 +10,8 @@ import { useErrorsStore } from '../stores/errors'
 const props = defineProps({
   modelValue: {
     type: Boolean,
-    default: true
-  }
+    default: true,
+  },
 })
 
 const emit = defineEmits(['update:modelValue', 'selected', 'cancel'])
@@ -24,7 +24,7 @@ const errorMessage = ref('')
 
 const isOpen = computed({
   get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value)
+  set: (value) => emit('update:modelValue', value),
 })
 
 const isBusy = computed(() => appStore.isBusy)
@@ -80,12 +80,7 @@ function handleCancel() {
     <v-card rounded="lg">
       <v-card-title class="text-h6">プロジェクトを選択</v-card-title>
       <v-card-text>
-        <v-alert
-          v-if="errorMessage"
-          type="error"
-          variant="tonal"
-          class="mb-4"
-        >
+        <v-alert v-if="errorMessage" type="error" variant="tonal" class="mb-4">
           {{ errorMessage }}
         </v-alert>
         <v-text-field
@@ -100,7 +95,7 @@ function handleCancel() {
         <v-btn
           data-testid="cancel"
           variant="text"
-          color="grey"
+          color="secondary"
           :disabled="isBusy"
           @click="handleCancel"
         >
@@ -118,7 +113,7 @@ function handleCancel() {
         <v-btn
           data-testid="validate"
           variant="flat"
-          color="teal"
+          color="primary"
           :loading="isBusy"
           @click="handleValidate"
         >

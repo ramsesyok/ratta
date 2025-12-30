@@ -119,7 +119,7 @@ function handleOpenErrors() {
 
 <template>
   <v-app>
-    <v-app-bar flat color="grey-lighten-4">
+    <v-app-bar flat>
       <v-toolbar-title>ratta</v-toolbar-title>
       <v-spacer />
       <v-badge

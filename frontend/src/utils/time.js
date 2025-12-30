@@ -12,3 +12,10 @@ export const formatJapaneseDateTime = (value) => {
     `${pad2(date.getSeconds())}秒`
   )
 }
+
+// formatDate は YYYY-MM-DD 形式で日付を整形する。
+export const formatDate = (value) => {
+  if (!value) return ''
+  const date = value instanceof Date ? value : new Date(value)
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`
+}

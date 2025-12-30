@@ -9,8 +9,8 @@ import { useAppStore } from '../stores/app'
 const props = defineProps({
   modelValue: {
     type: Boolean,
-    default: true
-  }
+    default: true,
+  },
 })
 
 const emit = defineEmits(['update:modelValue', 'verified', 'closed'])
@@ -23,7 +23,7 @@ const failed = ref(false)
 
 const isOpen = computed({
   get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value)
+  set: (value) => emit('update:modelValue', value),
 })
 
 const isBusy = computed(() => appStore.isBusy)
@@ -53,12 +53,7 @@ function handleClose() {
     <v-card rounded="lg">
       <v-card-title class="text-h6">Contractor 認証</v-card-title>
       <v-card-text>
-        <v-alert
-          v-if="errorMessage"
-          type="error"
-          variant="tonal"
-          class="mb-4"
-        >
+        <v-alert v-if="errorMessage" type="error" variant="tonal" class="mb-4">
           {{ errorMessage }}
         </v-alert>
         <v-text-field
@@ -74,7 +69,7 @@ function handleClose() {
         <v-btn
           data-testid="close"
           variant="text"
-          color="grey"
+          color="secondary"
           :disabled="!failed"
           @click="handleClose"
         >
@@ -83,7 +78,7 @@ function handleClose() {
         <v-btn
           data-testid="verify"
           variant="flat"
-          color="teal"
+          color="primary"
           :loading="isBusy"
           :disabled="failed"
           @click="handleVerify"
