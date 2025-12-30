@@ -265,6 +265,8 @@ func (s *Service) AddComment(category, issueID string, currentMode mod.Mode, inp
 		AuthorName:    input.AuthorName,
 		AuthorCompany: originCompany(currentMode),
 		CreatedAt:     nowISO(),
+		// スキーマは attachments を配列として要求するため、空でも明示的に初期化する。
+		Attachments: []issue.AttachmentRef{},
 	}
 	for i, savedAttachment := range saved {
 		mime := input.Attachments[i].MimeType

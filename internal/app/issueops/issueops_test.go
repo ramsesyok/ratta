@@ -250,6 +250,62 @@ func TestAddComment_Success(t *testing.T) {
 	}
 }
 
+func TestAddComment_EmptyAttachmentsKeepsSchemaValid(t *testing.T) {
+	// 添付なしコメントがスキーマ不整合を起こさないことを確認する。
+	root := t.TempDir()
+	category := "cat"
+	if err := os.MkdirAll(filepath.Join(root, category), 0o750); err != nil {
+		t.Fatalf("mkdir category: %v", err)
+	}
+	issueID := "abc123DEF"
+	base := issue.Issue{
+		Version:       1,
+		IssueID:       issueID,
+		Category:      category,
+		Title:         "title",
+		Description:   "desc",
+		Status:        issue.StatusOpen,
+		Priority:      issue.PriorityHigh,
+		OriginCompany: issue.CompanyVendor,
+		CreatedAt:     "2024-01-01T00:00:00Z",
+		UpdatedAt:     "2024-01-01T00:00:00Z",
+		DueDate:       "2024-01-02",
+		Comments:      []issue.Comment{},
+	}
+	data, err := jsonfmt.MarshalIssue(base)
+	if err != nil {
+		t.Fatalf("MarshalIssue error: %v", err)
+	}
+	if writeErr := os.WriteFile(filepath.Join(root, category, issueID+".json"), data, 0o600); writeErr != nil {
+		t.Fatalf("write issue: %v", writeErr)
+	}
+
+	validator, err := schema.NewValidatorFromDir(filepath.Join("..", "..", "..", "schemas"))
+	if err != nil {
+		t.Fatalf("NewValidatorFromDir error: %v", err)
+	}
+	service := NewService(root, validator)
+
+	if _, err := service.AddComment(category, issueID, mod.ModeVendor, CommentCreateInput{
+		Body:       "hello",
+		AuthorName: "author",
+	}); err != nil {
+		t.Fatalf("AddComment error: %v", err)
+	}
+
+	saved, err := os.ReadFile(filepath.Join(root, category, issueID+".json"))
+	if err != nil {
+		t.Fatalf("read issue: %v", err)
+	}
+	result, err := validator.ValidateIssue(saved)
+	if err != nil {
+		t.Fatalf("ValidateIssue error: %v", err)
+	}
+	if len(result.Issues) != 0 {
+		t.Fatalf("expected schema valid, issues=%v", result.Issues)
+	}
+}
+
 func TestAddComment_RollbackOnWriteFailure(t *testing.T) {
 	// JSON 更新失敗時に添付がロールバックされることを確認する。
 	root := t.TempDir()
