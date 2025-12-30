@@ -67,8 +67,19 @@ func MapError(err error) *APIErrorDTO {
 	}
 }
 
+// classifyError は DD-BE-003 のエラーコード判定を行う。
+// 目的: メッセージ内容から ApiErrorDTO.error_code を決定する。
+// 入力: message はエラーメッセージ文字列。
+// 出力: エラーコード文字列。
+// エラー: なし。
+// 副作用: なし。
+// 並行性: スレッドセーフ。
+// 不変条件: 既知の判定に一致しない場合は E_INTERNAL を返す。
+// 関連DD: DD-BE-003
 func classifyError(message string) string {
 	switch {
+	case strings.Contains(message, "project root is not set"):
+		return ErrorValidation
 	case strings.Contains(message, "permission"):
 		return ErrorPermission
 	case strings.Contains(message, "not found"):

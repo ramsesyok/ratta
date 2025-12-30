@@ -5,19 +5,106 @@
             "label": "build",
             "type": "shell",
             "options": {
-                "cwd": "${workspaceFolder}"
+                "cwd": "${workspaceFolder}",
+                "env": {
+                    "CGO_ENABLED": "1"
+                }
+            },
+            "osx": {
+                "options": {
+                    "env": {
+                        "CGO_CFLAGS": "-mmacosx-version-min=10.13",
+                        "CGO_LDFLAGS": "-framework UniformTypeIdentifiers -mmacosx-version-min=10.13"
+                    }
+                }
+            },
+            "windows": {
+                "options": {
+                    "env": {
+                        "CGO_ENABLED": "0"
+                    }
+                }
             },
             "command": "go",
             "args": [
                 "build",
                 "-tags",
-                "dev",
+                "production,desktop,webkit2_41",
                 "-gcflags",
                 "all=-N -l",
-                "-tags webkit2_41",
                 "-o",
                 "build/bin/ratta"
-            ],
+            ]
+        },
+        {
+            "label": "build debug",
+            "type": "shell",
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": {
+                    "CGO_ENABLED": "1"
+                }
+            },
+            "osx": {
+                "options": {
+                    "env": {
+                        "CGO_CFLAGS": "-mmacosx-version-min=10.13",
+                        "CGO_LDFLAGS": "-framework UniformTypeIdentifiers -mmacosx-version-min=10.13"
+                    }
+                }
+            },
+            "windows": {
+                "options": {
+                    "env": {
+                        "CGO_ENABLED": "0"
+                    }
+                }
+            },
+            "command": "go",
+            "args": [
+                "build",
+                "-tags",
+                "production,desktop,debug,webkit2_41",
+                "-gcflags",
+                "all=-N -l",
+                "-o",
+                "build/bin/ratta"
+            ]
+        },
+        {
+            "label": "build dev",
+            "type": "shell",
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": {
+                    "CGO_ENABLED": "1"
+                }
+            },
+            "osx": {
+                "options": {
+                    "env": {
+                        "CGO_CFLAGS": "-mmacosx-version-min=10.13",
+                        "CGO_LDFLAGS": "-framework UniformTypeIdentifiers -mmacosx-version-min=10.13"
+                    }
+                }
+            },
+            "windows": {
+                "options": {
+                    "env": {
+                        "CGO_ENABLED": "0"
+                    }
+                }
+            },
+            "command": "go",
+            "args": [
+                "build",
+                "-tags",
+                "dev,webkit2_41",
+                "-gcflags",
+                "all=-N -l",
+                "-o",
+                "build/bin/ratta"
+            ]
         }
     ]
 }

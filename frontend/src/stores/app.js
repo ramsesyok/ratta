@@ -25,6 +25,7 @@ export const useAppStore = defineStore('app', {
   state: () => ({
     mode: 'Vendor',
     projectRoot: null,
+    lastProjectRootPath: null,
     pageSize: 20,
     bootstrapLoaded: false,
     contractorAuthRequired: false,
@@ -46,7 +47,7 @@ export const useAppStore = defineStore('app', {
       try {
         const data = await getAppBootstrap()
         this.pageSize = data.ui_page_size ?? this.pageSize
-        this.projectRoot = data.last_project_root_path ?? null
+        this.lastProjectRootPath = data.last_project_root_path ?? null
         this.contractorAuthRequired = data.has_contractor_auth_file ?? false
         this.bootstrapLoaded = true
       } catch (e) {
@@ -62,7 +63,7 @@ export const useAppStore = defineStore('app', {
     // エラー: 失敗時は errors ストアに登録する。
     // 副作用: バックエンド呼び出しを行う。
     // 並行性: 同時実行は想定しない。
-    // 不変条件: 成功時に projectRoot を更新する。
+    // 不変条件: 成功時に projectRoot と lastProjectRootPath を更新する。
     // 関連DD: DD-STORE-012
     async selectProjectRoot(path) {
       const errors = useErrorsStore()
@@ -72,6 +73,7 @@ export const useAppStore = defineStore('app', {
         if (result.is_valid) {
           await saveLastProjectRoot(result.normalized_path ?? path)
           this.projectRoot = result.normalized_path ?? path
+          this.lastProjectRootPath = this.projectRoot
         }
         return result
       } catch (e) {
@@ -88,7 +90,7 @@ export const useAppStore = defineStore('app', {
     // エラー: 失敗時は errors ストアに登録する。
     // 副作用: バックエンド呼び出しを行う。
     // 並行性: 同時実行は想定しない。
-    // 不変条件: 成功時に projectRoot を更新する。
+    // 不変条件: 成功時に projectRoot と lastProjectRootPath を更新する。
     // 関連DD: DD-STORE-012
     async createProjectRoot(path) {
       const errors = useErrorsStore()
@@ -98,6 +100,7 @@ export const useAppStore = defineStore('app', {
         if (result.is_valid) {
           await saveLastProjectRoot(result.normalized_path ?? path)
           this.projectRoot = result.normalized_path ?? path
+          this.lastProjectRootPath = this.projectRoot
         }
         return result
       } catch (e) {

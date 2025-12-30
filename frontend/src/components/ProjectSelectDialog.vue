@@ -34,7 +34,7 @@ onMounted(async () => {
   if (!appStore.bootstrapLoaded) {
     await appStore.bootstrap()
   }
-  pathInput.value = appStore.projectRoot ?? ''
+  pathInput.value = appStore.lastProjectRootPath ?? ''
 })
 
 async function handleValidate() {

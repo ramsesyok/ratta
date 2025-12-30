@@ -28,7 +28,7 @@ describe('ProjectSelectDialog', () => {
     setActivePinia(createPinia())
     const app = useAppStore()
     app.bootstrapLoaded = true
-    app.projectRoot = ''
+    app.lastProjectRootPath = ''
     app.selectProjectRoot = vi.fn().mockResolvedValue({
       is_valid: false,
       message: 'Path does not exist.'
@@ -56,7 +56,7 @@ describe('ProjectSelectDialog', () => {
     setActivePinia(createPinia())
     const app = useAppStore()
     app.bootstrapLoaded = true
-    app.projectRoot = 'C:/proj'
+    app.lastProjectRootPath = 'C:/proj'
     app.selectProjectRoot = vi.fn().mockResolvedValue({
       is_valid: true,
       normalized_path: 'C:/proj'

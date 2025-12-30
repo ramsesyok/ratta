@@ -54,6 +54,23 @@ func TestMapError_Internal(t *testing.T) {
 	}
 }
 
+// TestMapError_ProjectRootNotSet はプロジェクトルート未設定の分類を確認する。
+// 目的: project root is not set が E_VALIDATION になることを確認する。
+// 入力: 未設定メッセージのエラー。
+// 出力: ErrorValidation のAPIErrorDTO。
+// エラー: なし。
+// 副作用: なし。
+// 並行性: スレッドセーフ。
+// 不変条件: error_code は E_VALIDATION。
+// 関連DD: DD-BE-003
+func TestMapError_ProjectRootNotSet(t *testing.T) {
+	// プロジェクトルート未設定はバリデーション扱いとなることを確認する。
+	dto := MapError(errors.New("project root is not set"))
+	if dto.ErrorCode != ErrorValidation {
+		t.Fatalf("unexpected code: %s", dto.ErrorCode)
+	}
+}
+
 func TestOkAndFail_ResponseEnvelope(t *testing.T) {
 	// 成功時と失敗時のレスポンス形式が正しく設定されることを確認する。
 	ok := Ok("data")

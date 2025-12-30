@@ -36,21 +36,29 @@ type App struct {
 // 目的: Wails 起動時に必要な状態を初期化する。
 // 入力: なし。
 // 出力: 初期化済み App。
-// エラー: 返却値で表現しない。実行ファイルパス取得失敗時は空文字を保持する。
-// 副作用: なし。
+// エラー: 返却値で表現しない。実行ファイルパスや設定読み込み失敗時は空文字のまま保持する。
+// 副作用: config.json を読み取る。
 // 並行性: 呼び出し側が単一スレッドで実行する前提。
-// 不変条件: mode は Vendor を初期値とする。
+// 不変条件: mode は Vendor を初期値とし、root は設定があれば復元する。
 // 関連DD: DD-BE-002
 func NewApp() *App {
 	exePath, exeErr := os.Executable()
 	if exeErr != nil {
 		exePath = ""
 	}
+	configRepo := configrepo.NewRepository(exePath)
+	root := ""
+	if cfg, hasConfig, err := configRepo.Load(); err == nil && hasConfig {
+		if cfg.LastProjectRootPath != "" {
+			root = cfg.LastProjectRootPath
+		}
+	}
 	validator := loadValidator(exePath)
 	return &App{
 		exePath:    exePath,
 		mode:       mod.ModeVendor,
-		configRepo: configrepo.NewRepository(exePath),
+		root:       root,
+		configRepo: configRepo,
 		validator:  validator,
 	}
 }

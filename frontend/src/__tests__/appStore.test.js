@@ -31,7 +31,8 @@ describe('app store', () => {
     await store.bootstrap()
 
     expect(store.pageSize).toBe(50)
-    expect(store.projectRoot).toBe('C:/proj')
+    expect(store.lastProjectRootPath).toBe('C:/proj')
+    expect(store.projectRoot).toBe(null)
     expect(store.contractorAuthRequired).toBe(true)
     expect(store.bootstrapLoaded).toBe(true)
   })
