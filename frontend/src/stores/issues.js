@@ -2,7 +2,7 @@
 // フィルタリングの実適用はUI側で実施する。
 import { defineStore } from 'pinia'
 
-import { listIssues } from '../utils/apiClient'
+import { createIssue, listIssues } from '../utils/apiClient'
 import { useAppStore } from './app'
 import { useErrorsStore } from './errors'
 
@@ -129,6 +129,30 @@ export const useIssuesStore = defineStore('issues', {
     // 関連DD: DD-STORE-014
     async setPage(category, page) {
       return this.loadIssues(category, { page })
+    },
+    // createIssue は課題を新規作成し一覧を更新する。
+    // 目的: 作成結果を返し、一覧キャッシュを最新化する。
+    // 入力: category はカテゴリ名、input は IssueCreateDTO。
+    // 出力: IssueDetailDTO。
+    // エラー: 失敗時は errors ストアに登録する。
+    // 副作用: バックエンド呼び出しと一覧再取得を行う。
+    // 並行性: 同時実行は想定しない。
+    // 不変条件: 作成成功時は該当カテゴリの一覧が更新される。
+    // 関連DD: DD-STORE-014
+    async createIssue(category, input) {
+      const errors = useErrorsStore()
+      if (!category) {
+        errors.capture(new Error('category is required'), { source: 'issues', action: 'createIssue' })
+        return null
+      }
+      try {
+        const detail = await createIssue(category, input)
+        await this.loadIssues(category, { page: 1 })
+        return detail
+      } catch (e) {
+        errors.capture(e, { source: 'issues', action: 'createIssue', category })
+        return null
+      }
     },
     // invalidateCategory は指定カテゴリのキャッシュを破棄する。
     // 目的: 再読み込みを促す。
